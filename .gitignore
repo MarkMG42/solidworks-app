@@ -1,0 +1,17 @@
+node_modules/
+frontend/dist/
+*.swp
+*.SWP
+*.[sS][wW][pP]
+local-macros/
+.env
+.env.*
+!.env.example
+.DS_Store
+*.user
+bin/
+obj/
+frontend/test-results/
+frontend/playwright-report/
+.vs/
+*.log
