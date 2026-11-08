@@ -45,3 +45,7 @@ Windows, SolidWorks 2025 и тестовые CAD-документы в обла�
 ## Упрощённая установка
 
 Добавлены Setup.ps1 и Установить.cmd: сборка на Windows с локальными interop, запрос UAC и установка. Для первой сборки нужны Node.js и .NET SDK. Макросы копируются отдельно. Пользователь разрешил публикацию текущих изменений в GitHub для проверки установки. Реальная Windows-приёмка остаётся обязательной.
+
+## Готовый EXE
+
+Добавлен installer/Setup.nsi и тестовый SWToolsHub-Setup.exe. Payload net48 собран в Linux с interop SW2024 32.1.0. Node/SDK пользователю не требуются. WebView2 при отсутствии ставится bootstrapper Microsoft с проверкой Authenticode; .NET Framework 4.8 проверяется. Проверены компиляция NSIS и синтаксис PowerShell; Windows установка и SW2025 не проверены. Макросов в EXE нет.
