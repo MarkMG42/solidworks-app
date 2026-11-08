@@ -767,3 +767,8 @@ dialog p {
     font-size: 9px;
   }
 }
+
+.run-button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}

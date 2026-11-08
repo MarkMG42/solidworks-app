@@ -15,3 +15,6 @@ frontend/test-results/
 frontend/playwright-report/
 .vs/
 *.log
+
+# Локальные пакеты приложения
+artifacts/

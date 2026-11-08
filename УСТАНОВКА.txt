@@ -1,0 +1,43 @@
+﻿БЫСТРЫЙ СТАРТ ИЗ РЕПОЗИТОРИЯ
+1. Скачайте GitHub → Code → Download ZIP и распакуйте весь архив.
+2. Для первой сборки установите Node.js 22.12+ и .NET SDK 8+.
+   Это требуется на машине сборки, а не всем будущим пользователям.
+3. Закройте SolidWorks и дважды нажмите «Установить.cmd».
+   Скрипт соберёт UI и DLL с библиотеками вашего SolidWorks,
+   создаст пакет в artifacts и запросит права администратора для установки.
+4. Скопируйте оба оригинальных .swp в открытую папку Library/Macros.
+5. SolidWorks → Сервис → Дополнения → SW Tools Hub; откройте чертёж
+   и нажмите «Запустить» у нужного инструмента.
+Первая проверка — на копии чертежа. Запуск внутри SolidWorks пока не проверен.
+При ошибке окно останется открытым: сохраните текст сообщения.
+
+SW Tools Hub — краткая установка на Windows
+
+Нужен готовый пакет приложения, Windows x64, SolidWorks 2025,
+.NET Framework 4.8 и Microsoft Edge WebView2 Evergreen Runtime x64.
+Node.js инженеру НЕ нужен. Исходники из GitHub сначала нужно собрать:
+  .\addin\scripts\Build-Package.ps1
+Разработчику нужны Node.js 22.12+, .NET SDK, Developer Pack .NET 4.8,
+SolidWorks API interop. Пакет появится в artifacts\SWToolsHub.
+
+1. Распакуйте ВЕСЬ пакет. Закройте SolidWorks.
+2. В 64-разрядном PowerShell от имени администратора из папки пакета:
+   powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Install.ps1
+   Перед запуском ознакомьтесь со скриптом; учитывайте политики организации.
+3. Отдельно скопируйте рабочие файлы в:
+   C:\Program Files\SWToolsHub\Library\Macros\Авторазмер Рамы.swp
+   C:\Program Files\SWToolsHub\Library\Macros\Свердловка.swp
+   Рабочие макросы НЕ входят в GitHub и пакет. Не заменяйте их .bas.
+4. Запустите SolidWorks → Сервис → Дополнения → SW Tools Hub.
+   При необходимости отметьте автозагрузку для своей учётной записи.
+5. Откройте подходящий чертёж, в Task Pane выберите макрос → Запустить.
+   Для первой проверки используйте копию чертежа и модели.
+
+Удаление: закройте SolidWorks и в административном x64 PowerShell
+из C:\Program Files\SWToolsHub выполните:
+   powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Uninstall.ps1
+Регистрация удаляется, библиотека макросов и файлы сохраняются.
+
+Важно: исходники подготовлены в Linux-облаке. Реальный запуск в
+SolidWorks 2025 ещё необходимо проверить на Windows; это не проверенный
+релиз. Полные требования, диагностика и приёмка: docs/INSTALL.md.

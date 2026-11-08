@@ -1,9 +1,10 @@
 import React, { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { macros, categories } from "./catalog";
+import { macros as demoMacros, categories } from "./catalog";
 import { Icon } from "./Icon";
 import { readSetting, writeSetting } from "./storage";
 import "./styles.css";
+import { host, subscribe } from "./bridge";
 
 type Theme = "light" | "dark";
 type Notice = { title: string; body: string };
@@ -13,6 +14,28 @@ const isStrings = (v: unknown): v is string[] =>
   Array.isArray(v) && v.every(isString);
 
 function App() {
+  const [macros, setMacros] = useState(host ? [] as typeof demoMacros : demoMacros);
+  const [running, setRunning] = useState<string | null>(null);
+  const runningRef = useRef<string | null>(null);
+  useEffect(() => subscribe((data) => {
+    if (data.type === "catalog" && Array.isArray(data.macros)) setMacros(data.macros);
+    if (data.type === "result") {
+      runningRef.current = null;
+      setRunning(null);
+      setNotice({ title: data.ok ? "Запуск завершён" : "Не удалось выполнить", body: data.message || "Дополнение не вернуло описание результата." });
+    }
+  }), []);
+  function run(id: string, name: string) {
+    if (!host) {
+      setNotice({ title: name, body: "Реальный запуск макросов доступен только внутри SolidWorks. Сейчас открыт демонстрационный режим — макрос не запускался." });
+      return;
+    }
+    if (runningRef.current) return;
+    runningRef.current = id;
+    setRunning(id);
+    try { host.postMessage({ type: "run", id }); }
+    catch { runningRef.current = null; setRunning(null); setNotice({ title: "Ошибка связи", body: "Не удалось передать команду дополнению. Перезапустите панель." }); }
+  }
   const [theme, setTheme] = useState(() =>
     readSetting("theme", "light" as Theme, isTheme),
   );
@@ -68,7 +91,7 @@ function App() {
     <div className="workspace">
       <div className="preview-label">
         <span className="preview-dot" />
-        SOLIDWORKS 2025 <span>/</span> TASK PANE PREVIEW
+        SOLIDWORKS 2025 <span>/</span> {host ? "TASK PANE" : "TASK PANE PREVIEW"}
       </div>
       <main className="pane">
         <header className="header">
@@ -158,8 +181,8 @@ function App() {
               className="secondary-button refresh-button"
               onClick={() =>
                 setNotice({
-                  title: "Демокаталог актуален",
-                  body: "В демонстрационной библиотеке два макроса. Обновление с сервера будет доступно после подключения дополнения к SolidWorks.",
+                  title: host ? "Локальная библиотека" : "Демокаталог актуален",
+                  body: "Каталог загружается при открытии панели. Сетевая библиотека будет доступна на следующем этапе.",
                 })
               }
             >
@@ -169,7 +192,7 @@ function App() {
             <div className="version-info">
               <span>SW Tools Hub</span>
               <code>v0.1.0</code>
-              <p>Предварительная версия · деморежим</p>
+              <p>{host ? "Дополнение SolidWorks · локальный запуск" : "Предварительная версия · деморежим"}</p>
             </div>
           </section>
         ) : (
@@ -285,15 +308,11 @@ function App() {
                       <span className="category-tag">{m.category}</span>
                       <button
                         className="run-button"
-                        onClick={() =>
-                          setNotice({
-                            title: m.name,
-                            body: "Реальный запуск макросов доступен только внутри SolidWorks. Сейчас открыт демонстрационный режим — макрос не запускался.",
-                          })
-                        }
+                        disabled={running !== null}
+                        onClick={() => run(m.id, m.name)}
                       >
                         <Icon name="play" size={13} />
-                        Запустить
+                        {running === m.id ? "Выполняется…" : "Запустить"}
                       </button>
                     </div>
                     <div
@@ -367,8 +386,8 @@ function App() {
           <div className="demo-notice">
             <span className="demo-dot" />
             <div>
-              <strong>Демонстрационный режим</strong>
-              <span>Запуск макросов — внутри SolidWorks</span>
+              <strong>{host ? "Локальная библиотека" : "Демонстрационный режим"}</strong>
+              <span>{host ? "Запуск в текущем документе SolidWorks" : "Запуск макросов — внутри SolidWorks"}</span>
             </div>
           </div>
           <div className="footer-bottom">
