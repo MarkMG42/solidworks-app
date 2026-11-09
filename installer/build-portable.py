@@ -28,9 +28,7 @@ with zipfile.ZipFile(output) as archive:
     assert archive.testzip() is None
     assert not any(n.lower().endswith('.swp') for n in archive.namelist())
     assert not any('webview' in n.lower() for n in archive.namelist())
-# Keep the previously published download URL current.
-(root / 'installer/SWToolsHub-Portable.zip').write_bytes(output.read_bytes())
 (root / 'installer/PORTABLE-SHA256.txt').write_text(
-    hashlib.sha256(output.read_bytes()).hexdigest() + '  SW-Assistant-Portable.zip\n' + hashlib.sha256(output.read_bytes()).hexdigest() + '  SWToolsHub-Portable.zip\n'
+    hashlib.sha256(output.read_bytes()).hexdigest() + '  SW-Assistant-Portable.zip\n'
 )
 print(output)

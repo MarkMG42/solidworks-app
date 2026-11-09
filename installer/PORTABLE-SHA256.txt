@@ -1,2 +1,1 @@
-fd8b2910b8cd09065ad1dd1dfa9e36fb79a6760bb8a5ddf91ea69d3a0db0556f  SW-Assistant-Portable.zip
-fd8b2910b8cd09065ad1dd1dfa9e36fb79a6760bb8a5ddf91ea69d3a0db0556f  SWToolsHub-Portable.zip
+02625edb34f45503ae685c7dd8a9db0dc501983183d10bb6e79f703c144b1a7f  SW-Assistant-Portable.zip
