@@ -1,4 +1,6 @@
 <!doctype html><html lang="ru"><meta charset="utf-8"><title>SW Tools Hub — предварительный просмотр</title><style>
+@font-face{font-family:'Source Sans 3';src:url('fonts/SourceSans3-Regular.ttf') format('truetype');font-weight:400;font-style:normal;font-display:block}
+
 @font-face{font-family:'Source Sans 3';src:url('../../addin/portable/Fonts/SourceSans3-Bold.ttf') format('truetype');font-weight:700;font-style:normal;font-display:block}
 *{box-sizing:border-box}
 body{margin:0;padding:20px;background:#EDE4DF;display:flex;justify-content:center;color:#24231F;font:700 18.667px 'Source Sans 3','Segoe UI',Arial,sans-serif}
@@ -62,6 +64,15 @@ button:focus-visible{outline:2px solid #706D61;outline-offset:2px}
 .tile small{transition:color .15s ease}.tile:hover small{transition-delay:.18s}
 dialog{width:min(560px,calc(100vw - 40px));padding:24px;border:1px solid #E3DCCF;border-radius:16px;background:#FDFCF8;color:#24231F;box-shadow:0 18px 70px #0003;font:inherit}
 dialog::backdrop{background:#24231F55}dialog h2{margin-bottom:12px}dialog p{font-size:16px;color:#706D61;margin:0 0 20px}dialog label{display:block;margin:12px 0 6px}dialog select{width:100%;padding:10px;font:inherit;border:1px solid #E3DCCF;border-radius:10px;background:#F8F3E8;color:#24231F}.entry-buttons{display:flex;justify-content:flex-end;gap:10px;margin-top:24px}.entry-buttons button{padding:10px 18px}
+
+/* Preview only: editable application controls are unchanged until design approval. */
+dialog select,dialog select::picker(select){appearance:base-select;font-family:'Source Sans 3','Segoe UI',sans-serif;font-size:18.667px;font-weight:400}
+dialog select{padding:10px 18px;border-color:#E3DCCF;display:flex;align-items:center;justify-content:space-between}
+dialog select::picker-icon{color:#706D61;margin-inline-start:auto;margin-inline-end:6px;rotate:0deg;transition:rotate .15s ease}
+dialog select:open::picker-icon{rotate:180deg}
+dialog select::picker(select){position:fixed;position-area:none;position-try-fallbacks:none;inset:auto;top:var(--picker-top);left:var(--picker-left);width:var(--picker-width);margin:0;padding:4px;border:1px solid #E3DCCF;border-radius:10px;background:#FDFCF8;color:#24231F;box-shadow:0 10px 30px #24231F22}
+dialog select option{padding:9px 12px;border-radius:6px;font-weight:400}
+dialog select option:hover,dialog select option:focus{background:#F0E7D8}
 </style><body><div class="window"><div class="titlebar"><span>▦ &nbsp; SW Tools Hub</span><span>− □ ×</span></div><main class="app"><div class="page"><header class="header"><strong>SW Tools Hub</strong><div class="toolbar"><button title="Выбрать папку библиотеки" onclick="document.getElementById('status').textContent='В приложении откроется системный выбор папки Windows.'"><svg viewBox="0 0 24 24"><path d="M3 6h7l2 3h9v10H3Z"/></svg></button></div></header><div class="search"><svg viewBox="0 0 24 24"><circle cx="10" cy="10" r="6"/><path d="m15 15 5 5"/></svg><input aria-label="Поиск макросов" oninput="render()" placeholder="Найти макрос…"></div><div class="hint">Поиск макросов</div><section class="modules"><button class="tile" onclick="show('Избранное',this)"><span class="caption"><svg viewBox="0 0 24 24"><path d="m12 3 2.7 5.5 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9Z"/></svg>Избранное</span><small>0 макросов</small></button><button class="tile" onclick="show('Чертежи',this)"><span class="caption"><svg viewBox="0 0 24 24"><path d="M5 3h10l4 4v14H5Zm10 0v5h4M8 12h8M8 16h5"/></svg>Чертежи</span><small>0 макросов</small></button><button class="tile" onclick="show('Сборки',this)"><span class="caption"><svg viewBox="0 0 24 24"><path d="m12 2 5 3v6l-5 3-5-3V5Zm-5 9-5 3v6l5 3 5-3v-6Zm10 0-5 3v6l5 3 5-3v-6Z"/></svg>Сборки</span><small>0 макросов</small></button><button class="tile" onclick="show('Лазер',this)"><span class="caption"><svg viewBox="0 0 24 24"><path d="M7 3h10v5l-5 4-5-4Zm5 9v7M3 21h18M6 13l-3 3m15-3 3 3"/></svg>Лазер</span><small>0 макросов</small></button></section><section class="content"><h2 id="heading">Избранные инструменты</h2><div id="rows"></div><p class="empty" id="empty">Нажмите ☆ рядом с макросом в разделе,<br>чтобы добавить его в избранное.</p></section><div class="status" id="status">Добавьте .swp в папки разделов библиотеки.</div><footer class="footer">0 инструментов · Portable</footer></div></main></div><dialog id="entry-dialog"><h2 id="entry-title">Выбор модуля и инструмента</h2><p>Выберите модуль и инструмент для выбранного макроса.</p><label for="entry-module">Модуль</label><select id="entry-module"></select><label for="entry-procedure">Инструмент / процедура</label><select id="entry-procedure"></select><div class="entry-buttons"><button id="entry-cancel">Отмена</button><button id="entry-confirm">Запустить</button></div></dialog><script>
 // Данные только для предварительного просмотра: рабочие .swp не добавляются.
 const macros=[{name:'Авторазмер Рамы',category:'Чертежи',favorite:true},{name:'Экспорт DXF',category:'Лазер',favorite:true}];
@@ -73,6 +84,10 @@ function render(){const query=document.querySelector('input').value.trim().toLow
 let entryMethods={};
 function updateProcedures(){const control=document.getElementById('entry-procedure');control.replaceChildren(...entryMethods[document.getElementById('entry-module').value].map(name=>new Option(name,name)))}
 function openEntry(m){selected=m;entryMethods=m.entries||(m.name==='Авторазмер Рамы'?{FrameCutListDimensionsV3:['main']}:{DXFExport:['main','exportSelected']});document.getElementById('entry-title').textContent=m.name;const modules=document.getElementById('entry-module');modules.replaceChildren(...Object.keys(entryMethods).map(name=>new Option(name,name)));updateProcedures();document.getElementById('entry-dialog').showModal()}
+document.querySelectorAll('dialog select').forEach(field=>{
+ const placePicker=()=>{const box=field.getBoundingClientRect();field.style.setProperty('--picker-top',(box.bottom+6)+'px');field.style.setProperty('--picker-left',box.left+'px');field.style.setProperty('--picker-width',box.width+'px')};
+ field.addEventListener('pointerdown',placePicker);field.addEventListener('keydown',placePicker);
+});
 document.getElementById('entry-module').onchange=updateProcedures;
 document.getElementById('entry-cancel').onclick=()=>document.getElementById('entry-dialog').close();
 document.getElementById('entry-confirm').onclick=()=>{document.getElementById('status').textContent='Предварительный просмотр — макрос не выполнялся.';document.getElementById('entry-dialog').close()};
