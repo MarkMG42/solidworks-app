@@ -86,6 +86,17 @@ namespace SWToolsHub.Portable
             return path;
         }
     }
+    internal sealed class ConnectionIndicator : Control
+    {
+        public ConnectionIndicator() { DoubleBuffered = true; ResizeRedraw = true; TabStop = false; }
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            e.Graphics.Clear(Parent?.BackColor ?? UiTheme.Background);
+            e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+            float diameter = 7f * DeviceDpi / 96f;
+            using (var brush = new SolidBrush(ForeColor)) e.Graphics.FillEllipse(brush, (Width - diameter) / 2f, (Height - diameter) / 2f, diameter, diameter);
+        }
+    }
     internal sealed class RoundedPanel : Panel
     {
         public Color BorderColor { get; set; } = UiTheme.Border;

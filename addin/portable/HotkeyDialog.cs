@@ -10,10 +10,11 @@ namespace SWToolsHub.Portable
     // Capture accelerators before menu/dialog processing as well as ordinary KeyDown input.
     internal sealed class HotkeyTextBox : TextBox
     {
+        public string CueText { get; set; } = "выберете сочетание";
         protected override void OnHandleCreated(EventArgs e)
         {
             base.OnHandleCreated(e);
-            SendMessage(Handle, 0x1501, new IntPtr(1), "выберете сочетание"); // EM_SETCUEBANNER
+            SendMessage(Handle, 0x1501, new IntPtr(1), CueText); // EM_SETCUEBANNER
         }
         [DllImport("user32.dll", CharSet = CharSet.Unicode)]
         private static extern IntPtr SendMessage(IntPtr window, int message, IntPtr wParam, string text);

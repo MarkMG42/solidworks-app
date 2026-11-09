@@ -26,13 +26,14 @@ namespace SWToolsHub.Portable
         private readonly string root = AppDomain.CurrentDomain.BaseDirectory;
         private readonly TextBox search = new TextBox { Dock = DockStyle.Fill, BorderStyle = BorderStyle.None };
         private Macro selectedMacro;
-        private readonly Label connection = new Label { Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft, AutoEllipsis = true, UseMnemonic = false };
+        private readonly Control connection = new ConnectionIndicator { Dock = DockStyle.Fill };
         private readonly Label activeDocument = new Label { Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleRight, AutoEllipsis = true, UseMnemonic = false };
         private bool connectionReady;
         private bool checkingConnection;
         private readonly Label status = new Label { Dock = DockStyle.Bottom, Height = 90, AutoEllipsis = true };
         private Macro[] macros = new Macro[0];
         private bool busy;
+        private bool closing;
         private bool editingHotkeys;
         private HotkeyService hotkeys;
         private string macroFolder;
@@ -79,7 +80,7 @@ namespace SWToolsHub.Portable
             if (tips.GetToolTip(choose) != tip) tips.SetToolTip(choose, tip);
         }
         private void ReloadFolder() {
-            if (busy) return;
+            if (busy || editingHotkeys) return;
             try {
                 string resolved = MacroFolder.ResolveStartup(settings.Folder, root);
                 if (!string.Equals(macroFolder, resolved, StringComparison.OrdinalIgnoreCase)) {
@@ -102,7 +103,7 @@ namespace SWToolsHub.Portable
             ClientSize = new Size(900, 600); MinimumSize = new Size(480, 320);
             StartPosition = FormStartPosition.CenterScreen;
             Font = UiTheme.CreateFont(); titleFont = UiTheme.CreateSemiBoldFont(); connectionFont = new Font(Font.FontFamily, 11f);
-            connection.Font = activeDocument.Font = connectionFont; BackColor = Background; ForeColor = Foreground;
+            activeDocument.Font = connectionFont; BackColor = Background; ForeColor = Foreground;
             shell = new TableLayoutPanel { ColumnCount = 1, RowCount = 5, Padding = new Padding(0) };
             shell.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
             foreach (var height in new[] { 60, 50, 26, 106 }) shell.RowStyles.Add(new RowStyle(SizeType.Absolute, height));
@@ -127,8 +128,7 @@ namespace SWToolsHub.Portable
             for (int i = 0; i < 4; i++) moduleGrid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25));
             moduleGrid.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
             count.Padding = new Padding(20, 0, 0, 0); count.ForeColor = Muted;
-            connection.Text = "●"; connection.ForeColor = Color.FromArgb(190, 65, 50);
-            connection.TextAlign = ContentAlignment.MiddleCenter;
+            connection.ForeColor = Color.FromArgb(190, 65, 50);
             activeDocument.TextAlign = ContentAlignment.MiddleLeft;
             activeDocument.ForeColor = Muted;
             shell.Controls.Add(header, 0, 0); shell.Controls.Add(searchBox, 0, 1); shell.Controls.Add(heading, 0, 2);
@@ -153,7 +153,7 @@ namespace SWToolsHub.Portable
             refresh.Tick += (s, e) => { ReloadFolder(); RefreshConnection(); };
             FormClosed += (s, e) => { refresh.Dispose(); hotkeys?.Dispose(); tips.Dispose(); titleFont.Dispose(); connectionFont.Dispose(); };
             search.TextChanged += (s, e) => Filter();
-            FormClosing += (s, e) => { if (busy) e.Cancel = true; };
+            FormClosing += (s, e) => { if (busy) e.Cancel = true; else closing = true; };
             Shown += (s, e) => {
                 try { SettingsFile.MigrateUserSettings(System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData)); }
                 catch (Exception ex) { ShowError("Не удалось перенести настройки в SW-Assistant: " + ex.Message); Close(); return; }
@@ -336,7 +336,7 @@ namespace SWToolsHub.Portable
                 if (newTile) tile.Disposed += (s, e) => tile.Image.Dispose();
                 tile.Dock = DockStyle.Fill; tile.Margin = new Padding(Px(4)); tile.AccessibleName = module;
                 tile.BackColor = (favoritesView ? section == null : section == module) ? UiTheme.Selected : UiTheme.Card;
-                if (newTile) tile.Click += (s, e) => { if (favoritesView) { search.Clear(); Navigate(null); } else Navigate(section == module ? null : module); };
+                if (newTile) tile.Click += (s, e) => { if (favoritesView) { search.Clear(); Navigate(null); } else Navigate(module); };
                 if (newTile) moduleGrid.Controls.Add(tile, i % moduleGrid.ColumnCount, i / moduleGrid.ColumnCount);
             }
             moduleGrid.ResumeLayout();
@@ -347,7 +347,7 @@ namespace SWToolsHub.Portable
             foreach (var macro in visible) {
                 var row = new TableLayoutPanel { Width = width, Height = Px(72), ColumnCount = 4, RowCount = 1, Margin = Space(0, 0, 0, 4) };
                 row.Paint += (s, e) => { using (var pen = new Pen(UiTheme.Border)) e.Graphics.DrawLine(pen, 0, row.Height - 1, row.Width, row.Height - 1); };
-                row.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, Px(52))); row.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100)); row.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, Px(uiScale <= .8f ? 0 : 128))); row.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, Px(52)));
+                row.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, Px(52))); row.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100)); row.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, Px(180))); row.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, Px(52)));
                 bool favorite = settings.Favorites.Contains(macro.id, StringComparer.OrdinalIgnoreCase);
                 var star = MakeButton("");
                 ConfigureIcon(star, favorite ? "starFilled" : "star", (favorite ? "Убрать из избранного: " : "В избранное: ") + macro.name);
@@ -363,11 +363,7 @@ namespace SWToolsHub.Portable
                 ((RoundedButton)name).Borderless = true;
                 ((RoundedButton)name).SecondaryText = macro.category;
                 tips.SetToolTip(name, macro.name);
-                int key; string shortcut = settings.Hotkeys.TryGetValue(macro.id, out key) ? Hotkey.Format(key) : "";
-                var shortcutLabel = new Label { Text = shortcut, Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleRight, AutoEllipsis = true, ForeColor = Muted, Margin = Space(0, 0, 8, 0) };
-                var shortcutFont = new Font(Font.FontFamily, 11f, FontStyle.Regular); shortcutLabel.Font = shortcutFont; shortcutLabel.Disposed += (sender, args) => shortcutFont.Dispose();
-                tips.SetToolTip(shortcutLabel, string.IsNullOrEmpty(shortcut) ? "Назначить сочетание можно кнопкой клавиатуры" : shortcut);
-                if (uiScale <= .8f && !string.IsNullOrEmpty(shortcut)) ((RoundedButton)name).SecondaryText += " · " + shortcut;
+                var shortcutField = CreateInlineHotkey(macro);
                 name.Dock = DockStyle.Fill; name.AutoEllipsis = true;
                 if (selectedMacro?.id == macro.id) name.BackColor = UiTheme.Selected;
                 name.Click += (s, e) => { selectedMacro = macro; status.Text = "Выбран: " + macro.name; };
@@ -376,7 +372,7 @@ namespace SWToolsHub.Portable
                 play.Tag = "run"; play.Enabled = connectionReady;
                 play.Dock = DockStyle.None; play.Anchor = AnchorStyles.None; play.Size = new Size(Px(46), Px(46));
                 play.Click += (s, e) => { selectedMacro = macro; RunSelected(macro, true); };
-                row.Controls.Add(star, 0, 0); row.Controls.Add(name, 1, 0); row.Controls.Add(shortcutLabel, 2, 0); row.Controls.Add(play, 3, 0); content.Controls.Add(row);
+                row.Controls.Add(play, 0, 0); row.Controls.Add(name, 1, 0); row.Controls.Add(shortcutField, 2, 0); row.Controls.Add(star, 3, 0); content.Controls.Add(row);
             }
             if (visible.Length == 0) content.Controls.Add(new Label { Text = macros.Length == 0 ? "Библиотека макросов пуста\n" + macroFolder + "\nВыберите папку библиотеки кнопкой папки." : home ? "Нажмите ☆ рядом с макросом в разделе, чтобы добавить его в избранное." : "Макросов пока нет. Добавьте .swp в папку раздела или измените запрос поиска.", Margin = new Padding(0), Width = width, Height = Px(100), ForeColor = Muted });
             if (home) {
@@ -386,6 +382,60 @@ namespace SWToolsHub.Portable
             }
             count.Text = macros.Length + " инструментов · Portable";
             content.ResumeLayout();
+        }
+        private Control CreateInlineHotkey(Macro macro)
+        {
+            var frame = new RoundedPanel { Anchor = AnchorStyles.Left | AnchorStyles.Right, Height = UiTheme.ControlHeight, CornerRadius = UiTheme.ControlRadius, BackColor = Background, Margin = Space(4, 0, 4, 0) };
+            var field = new HotkeyTextBox { ReadOnly = true, ShortcutsEnabled = false, BorderStyle = BorderStyle.None, BackColor = Background, ForeColor = Foreground, CueText = "Назначить клавиши", AccessibleName = "Горячая клавиша: " + macro.name };
+            frame.Controls.Add(field);
+            Action layoutField = () => { int inset = Math.Max(1, (int)Math.Round(12f * frame.DeviceDpi / 96f)); field.SetBounds(inset, Math.Max(0, (frame.Height - field.PreferredHeight) / 2), Math.Max(1, frame.Width - inset * 2), field.PreferredHeight); };
+            frame.SizeChanged += (s, e) => layoutField(); field.FontChanged += (s, e) => layoutField(); field.HandleCreated += (s, e) => layoutField();
+            Action showSaved = () => { int key; field.Text = settings.Hotkeys.TryGetValue(macro.id, out key) ? Hotkey.Format(key) : ""; };
+            showSaved();
+            Dictionary<string, int> restore = null;
+            Action resetError = () => { frame.BorderColor = field.Focused ? UiTheme.AccentInk : UiTheme.Border; frame.Invalidate(); tips.Hide(field); };
+            Action<string> error = text => { frame.BorderColor = Color.FromArgb(190, 65, 50); frame.Invalidate(); tips.Show(text, field, 0, field.Height + 4, 5000); };
+            field.Enter += (s, e) => {
+                if (busy || editingHotkeys || hotkeys == null) { BeginInvoke((Action)(() => search.Focus())); return; }
+                restore = hotkeys.Snapshot(); string ignored; hotkeys.TryApply(new Dictionary<string, int>(), out ignored);
+                editingHotkeys = true; resetError();
+            };
+            Action finish = () => {
+                if (restore == null) return;
+                var previous = restore; restore = null;
+                string failure;
+                if (!closing && !IsDisposed && !hotkeys.TryApply(previous, out failure)) ShowError(failure);
+                editingHotkeys = false;
+                if (!field.IsDisposed) { showSaved(); frame.BorderColor = UiTheme.Border; frame.Invalidate(); tips.Hide(field); }
+            };
+            field.Leave += (s, e) => finish(); field.Disposed += (s, e) => finish();
+            frame.MouseDown += (s, e) => field.Focus();
+            field.PreviewKeyDown += (s, e) => { if (e.KeyCode != Keys.Tab) e.IsInputKey = true; };
+            field.KeyDown += (s, e) => {
+                if (e.KeyCode == Keys.Tab) return;
+                e.SuppressKeyPress = true; e.Handled = true;
+                if (e.KeyCode == Keys.Escape) { showSaved(); resetError(); search.Focus(); return; }
+                if (e.KeyCode == Keys.ControlKey || e.KeyCode == Keys.Menu || e.KeyCode == Keys.ShiftKey || restore == null) return;
+                bool clear = (e.KeyCode == Keys.Back || e.KeyCode == Keys.Delete) && e.Modifiers == Keys.None;
+                int value = (int)e.KeyData;
+                if (!clear && !Hotkey.IsValid(value)) { error("Используйте Ctrl, Alt или Shift вместе с буквой, цифрой или F-клавишей."); return; }
+                var next = new Dictionary<string, int>(settings.Hotkeys, StringComparer.OrdinalIgnoreCase);
+                next.Remove(macro.id);
+                if (!clear) {
+                    field.Text = Hotkey.Format(value);
+                    var duplicate = next.FirstOrDefault(p => p.Value == value);
+                    if (duplicate.Key != null) { error("Уже назначено: " + Path.GetFileNameWithoutExtension(duplicate.Key) + ". Выберите другое сочетание."); return; }
+                    next[macro.id] = value;
+                }
+                string failure;
+                if (!hotkeys.TryApply(next, out failure)) { error(failure); return; }
+                var old = settings.Hotkeys; settings.Hotkeys = next;
+                try { SaveSettings(); restore = new Dictionary<string, int>(next, StringComparer.OrdinalIgnoreCase); showSaved(); resetError(); }
+                catch (Exception ex) { settings.Hotkeys = old; showSaved(); error("Не удалось сохранить сочетание: " + ex.Message); }
+                finally { string ignored; hotkeys.TryApply(new Dictionary<string, int>(), out ignored); }
+            };
+            tips.SetToolTip(field, "Нажмите сочетание. Backspace — удалить; Escape — отменить незавершённый ввод.");
+            return frame;
         }
         private void RefreshConnection()
         {
