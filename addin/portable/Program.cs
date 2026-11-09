@@ -24,7 +24,7 @@ namespace SWToolsHub.Portable
         private readonly string root = AppDomain.CurrentDomain.BaseDirectory;
         private readonly TextBox search = new TextBox { Dock = DockStyle.Top };
         private readonly ListBox list = new ListBox { Dock = DockStyle.Fill, DisplayMember = "name" };
-        private readonly Button run = new Button { Dock = DockStyle.Bottom, Height = 44, Text = "Запустить в SolidWorks" };
+        private readonly Button run = new Button { Dock = DockStyle.Bottom, Height = 44, Text = "Выбрать процедуру и запустить…" };
         private readonly Label status = new Label { Dock = DockStyle.Bottom, Height = 90, AutoEllipsis = true };
         private Macro[] macros = new Macro[0];
         private bool busy;
@@ -55,29 +55,23 @@ namespace SWToolsHub.Portable
             Text = "SW Tools Hub — локальные макросы";
             Width = 440; Height = 520; MinimumSize = new System.Drawing.Size(320, 380);
             var hint = new Label { Dock = DockStyle.Top, Height = 52, Text = "Откройте SolidWorks и подходящий чертёж.\nПоиск инструмента:" };
-            var choose = new Button { Dock = DockStyle.Top, Height = 34, Text = "Выбрать корневую папку макросов…" };
-            var folder = new Button { Dock = DockStyle.Bottom, Height = 36, Text = "Открыть папку для .swp" };
-            Controls.Add(list); Controls.Add(search); Controls.Add(hint); Controls.Add(folderLabel); Controls.Add(choose);
-            var entryButton = new Button { Dock = DockStyle.Bottom, Height = 32, Text = "Выбрать процедуру и запустить…" };
-            entryButton.Click += (s, e) => RunSelected(true);
-            Controls.Add(status); Controls.Add(entryButton); Controls.Add(run); Controls.Add(folder);
-            folder.Click += (s, e) => {
-                try { var path = macroFolder; if (string.IsNullOrEmpty(path)) return; Directory.CreateDirectory(path); System.Diagnostics.Process.Start("explorer.exe", "\"" + path + "\""); }
-                catch (Exception ex) { ShowError(ex.Message); }
-            };
+            var choose = new Button { Dock = DockStyle.Bottom, Height = 36, Text = "Выбрать папку макросов…" };
+            Controls.Add(list); Controls.Add(search); Controls.Add(hint); Controls.Add(folderLabel);
+            Controls.Add(status); Controls.Add(run); Controls.Add(choose);
             choose.Click += (s, e) => {
                 if (busy) return;
-                using (var dialog = new FolderBrowserDialog { Description = "Папка с рабочими .swp (без вложенных папок)", SelectedPath = macroFolder }) {
-                    if (dialog.ShowDialog(this) != DialogResult.OK) return;
-                    try { settings.Folder = dialog.SelectedPath; SaveSettings(); macroFolder = settings.Folder; folderLabel.Text = macroFolder; ReloadFolder(); }
-                    catch (Exception ex) { ShowError("Не удалось сохранить выбор папки: " + ex.Message); }
-                }
+                try {
+                    var selectedFolder = FolderPicker.Choose(Handle, macroFolder);
+                    if (selectedFolder == null) return;
+                    settings.Folder = selectedFolder; SaveSettings(); macroFolder = selectedFolder;
+                    folderLabel.Text = macroFolder; ReloadFolder();
+                } catch (Exception ex) { ShowError("Не удалось выбрать папку: " + ex.Message); }
             };
             refresh.Tick += (s, e) => ReloadFolder();
             FormClosed += (s, e) => refresh.Dispose();
             search.TextChanged += (s, e) => Filter();
             list.SelectedIndexChanged += (s, e) => run.Enabled = !busy && list.SelectedItem != null;
-            run.Click += (s, e) => RunSelected();
+            run.Click += (s, e) => RunSelected(true);
             FormClosing += (s, e) => { if (busy) e.Cancel = true; };
             Shown += (s, e) => {
                 try {
