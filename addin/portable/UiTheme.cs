@@ -55,9 +55,9 @@ namespace SWToolsHub.Portable
         {
             e.Graphics.Clear(Parent?.BackColor ?? BackColor);
             e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
-            using (var path = UiTheme.Shape(new RectangleF(1, 1, Width - 2, Height - 2), 12))
+            using (var path = UiTheme.Shape(new RectangleF(.5f, .5f, Width - 1, Height - 1), 12))
             using (var fill = new SolidBrush(BackColor))
-            using (var pen = new Pen(BorderColor, 2)) { e.Graphics.FillPath(fill, path); e.Graphics.DrawPath(pen, path); }
+            using (var pen = new Pen(BorderColor, 1)) { e.Graphics.FillPath(fill, path); e.Graphics.DrawPath(pen, path); }
         }
     }
     internal sealed class RoundedButton : Button
@@ -73,9 +73,9 @@ namespace SWToolsHub.Portable
             e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
             bool card = BackColor.ToArgb() == UiTheme.Card.ToArgb() || BackColor.ToArgb() == UiTheme.Selected.ToArgb();
             var hoverColor = card ? UiTheme.Selected : UiTheme.Background;
-            using (var path = UiTheme.Shape(new RectangleF(1.5f, 1.5f, Width - 3, Height - 3), 10))
+            using (var path = UiTheme.Shape(new RectangleF(1, 1, Width - 2, Height - 2), 10))
             using (var fill = new SolidBrush(hovered && Enabled ? hoverColor : BackColor))
-            using (var pen = new Pen(UiTheme.Border, Focused ? 3 : 2)) {
+            using (var pen = new Pen(UiTheme.Border, Focused ? 2 : 1)) {
                 e.Graphics.FillPath(fill, path); e.Graphics.DrawPath(pen, path);
             }
             if (Image != null) {
