@@ -2,6 +2,7 @@ using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Text;
+using System.Drawing.Imaging;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
@@ -23,8 +24,8 @@ namespace SWToolsHub.Portable
         public static readonly Color IconSurface = Color.FromArgb(242, 230, 215);
         public static readonly Color IconBorder = Color.FromArgb(222, 199, 177);
         public static readonly Color IconHover = Color.FromArgb(234, 215, 194);
-        public static readonly Color AccentInk = Color.FromArgb(169, 99, 71);
-        public static readonly Color AccentFill = Color.FromArgb(232, 189, 162);
+        public static readonly Color AccentInk = Color.FromArgb(198, 83, 46);
+        public static readonly Color AccentFill = Color.FromArgb(243, 178, 138);
         private static readonly PrivateFontCollection fonts = new PrivateFontCollection();
         private static string fontPath;
         [DllImport("gdi32.dll", CharSet = CharSet.Unicode)] private static extern int AddFontResourceEx(string file, uint flags, IntPtr reserved);
@@ -70,6 +71,7 @@ namespace SWToolsHub.Portable
     {
         public string SecondaryText { get; set; }
         public bool IconOnly { get; set; }
+        public bool AccentHover { get; set; }
         public bool LeadingIcon { get; set; }
         public bool Borderless { get; set; }
         private bool hovered;
@@ -81,19 +83,30 @@ namespace SWToolsHub.Portable
             e.Graphics.Clear(Parent?.BackColor ?? BackColor);
             e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
             bool card = BackColor.ToArgb() == UiTheme.Card.ToArgb() || BackColor.ToArgb() == UiTheme.Selected.ToArgb();
-            var hoverColor = IconOnly ? UiTheme.IconHover : card ? UiTheme.Selected : UiTheme.Background;
+            bool accentActive = AccentHover && hovered && Enabled;
+            var hoverColor = accentActive ? UiTheme.AccentInk : IconOnly ? UiTheme.IconHover : card ? UiTheme.Selected : UiTheme.Background;
             using (var path = UiTheme.Shape(new RectangleF(1, 1, Width - 2, Height - 2), 16))
             using (var fill = new SolidBrush(hovered && Enabled ? hoverColor : BackColor))
-            using (var pen = new Pen(Focused ? UiTheme.IconInk : IconOnly ? UiTheme.IconBorder : UiTheme.Border, Focused ? 2 : 1)) {
+            using (var pen = new Pen(accentActive ? UiTheme.AccentInk : Focused ? UiTheme.IconInk : IconOnly ? UiTheme.IconBorder : UiTheme.Border, Focused ? 2 : 1)) {
                 e.Graphics.FillPath(fill, path); if (!Borderless || Focused) e.Graphics.DrawPath(pen, path);
             }
             if (Image != null) {
                 int x = LeadingIcon ? Padding.Left : (Width - Image.Width) / 2;
                 int y = LeadingIcon ? Math.Max(8, (Height - Font.Height * (string.IsNullOrEmpty(SecondaryText) ? 3 : 2) - 2) / 2) : (Height - Image.Height) / 2;
-                if (Enabled) e.Graphics.DrawImage(Image, x, y); else ControlPaint.DrawImageDisabled(e.Graphics, Image, x, y, BackColor);
+                if (accentActive) {
+                    int size = Math.Min(Math.Min(Width, Height) - 6, (int)Math.Round(Image.Width * 1.2));
+                    var target = new Rectangle((Width - size) / 2, (Height - size) / 2, size, size);
+                    using (var attributes = new ImageAttributes()) {
+                        var tint = new ColorMatrix { Matrix00 = 0, Matrix11 = 0, Matrix22 = 0, Matrix40 = 1, Matrix41 = 1, Matrix42 = 1 };
+                        attributes.SetColorMatrix(tint);
+                        e.Graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                        e.Graphics.DrawImage(Image, target, 0, 0, Image.Width, Image.Height, GraphicsUnit.Pixel, attributes);
+                    }
+                } else if (Enabled) e.Graphics.DrawImage(Image, x, y); else ControlPaint.DrawImageDisabled(e.Graphics, Image, x, y, BackColor);
             }
             var textBounds = new Rectangle(Padding.Left, Padding.Top, Math.Max(1, Width - Padding.Horizontal), Math.Max(1, Height - Padding.Vertical));
             if (LeadingIcon) { textBounds.X += 32; textBounds.Width = Math.Max(1, textBounds.Width - 32); }
+            var textColor = accentActive ? Color.White : Enabled ? ForeColor : SystemColors.GrayText;
             var flags = TextFormatFlags.VerticalCenter | TextFormatFlags.WordBreak | TextFormatFlags.EndEllipsis;
             flags |= TextAlign == ContentAlignment.MiddleCenter ? TextFormatFlags.HorizontalCenter : TextFormatFlags.Left;
             if (!string.IsNullOrEmpty(SecondaryText)) {
@@ -101,10 +114,10 @@ namespace SWToolsHub.Portable
                 var titleBounds = new Rectangle(textBounds.Left, Math.Max(textBounds.Top, (Height - lineHeight * 2 - 2) / 2), textBounds.Width, lineHeight + 2);
                 var detailBounds = new Rectangle(titleBounds.Left, titleBounds.Bottom + 2, titleBounds.Width, lineHeight);
                 var lineFlags = TextFormatFlags.Left | TextFormatFlags.SingleLine | TextFormatFlags.EndEllipsis;
-                TextRenderer.DrawText(e.Graphics, Text, Font, titleBounds, Enabled ? ForeColor : SystemColors.GrayText, lineFlags);
+                TextRenderer.DrawText(e.Graphics, Text, Font, titleBounds, textColor, lineFlags);
                 using (var detailFont = new Font(Font.FontFamily, Math.Max(8, Font.Size - 1), Font.Style))
                     TextRenderer.DrawText(e.Graphics, SecondaryText, detailFont, detailBounds, UiTheme.Muted, lineFlags);
-            } else TextRenderer.DrawText(e.Graphics, Text, Font, textBounds, Enabled ? ForeColor : SystemColors.GrayText, flags);
+            } else TextRenderer.DrawText(e.Graphics, Text, Font, textBounds, textColor, flags);
         }
     }
 }
