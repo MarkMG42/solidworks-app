@@ -94,4 +94,36 @@ document.getElementById('entry-confirm').onclick=()=>{document.getElementById('s
 render();
 const app=document.querySelector('.app');
 new ResizeObserver(()=>app.style.setProperty('--s',Math.max(.8,Math.min(1.5,app.clientWidth/900)))).observe(app);
-</script></body></html>
+</script>
+
+
+
+<style>
+#hotkeys{width:720px;max-width:calc(100vw - 48px);padding:26px 28px;border-radius:16px;max-height:calc(100vh - 48px);overflow:auto}
+#hotkeys .dialog-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}#hotkeys h2{font-size:24px;margin:0}#hotkeys .close{background:transparent;border:0;color:#706D61;font-size:26px;padding:0 4px}
+#hotkeys p{font-size:17px;line-height:1.4;margin:0 0 18px;font-weight:400}
+.table-scroll{height:306px;overflow-y:auto;border:1px solid #E3DCCF;border-radius:12px;background:#F8F3E8;scrollbar-color:#C5BCAF #F8F3E8;scrollbar-width:thin}
+#hotkeys table{width:100%;border-collapse:separate;border-spacing:0;table-layout:fixed}#hotkeys th{text-align:left;padding:13px 16px;background:#F0E7D8;position:sticky;top:0;z-index:1;font-size:18px;border-bottom:1px solid #E3DCCF}#hotkeys th:first-child{width:51%}
+#hotkeys td{padding:12px 16px;border-bottom:1px solid #E3DCCF;font-size:18px;vertical-align:middle}#hotkeys td small{display:block;font:400 15px 'Source Sans 3';color:#706D61;margin-top:3px}
+.key-field{display:flex;gap:6px;align-items:center}#hotkeys input{width:100%;min-width:0;border:1px solid #E3DCCF;border-radius:9px;background:#FDFCF8;color:#24231F;padding:10px 12px;font:400 17px 'Source Sans 3';outline:none}#hotkeys input::placeholder{color:#706D61}#hotkeys input:focus{border-color:#C6532E;box-shadow:0 0 0 3px #C6532E12}#hotkeys input.invalid{border-color:#B33E29;background:#FFF3ED}#hotkeys .clear{border:0;background:transparent;color:#706D61;padding:0 2px;font-size:22px}
+#hotkeys .notice{min-height:64px;margin-top:16px;padding:11px 14px;border:1px solid #E3DCCF;border-radius:10px;color:#706D61;background:#F8F3E8;font:400 16px/1.35 'Source Sans 3'}#hotkeys .notice.error{color:#963B25;background:#FFF0E8;border-color:#E0AC96}#hotkeys .notice strong{font-size:16px;font-weight:700}
+#hotkeys .footnote{font-size:15px;color:#706D61;margin:12px 0 0}#hotkeys .entry-buttons{border-top:1px solid #E3DCCF;padding-top:18px;margin-top:18px}#hotkeys .primary{background:#C6532E;border-color:#C6532E;color:white}#hotkeys button:disabled{opacity:.4;cursor:default}
+@media(max-width:600px){#hotkeys{padding:18px}#hotkeys td,#hotkeys th{padding:10px 8px}#hotkeys input{font-size:15px;padding:9px 6px}#hotkeys td{font-size:16px}.table-scroll{height:280px}}
+</style>
+<dialog id="hotkeys" aria-labelledby="hk-title"><div class="dialog-head"><h2 id="hk-title">Горячие клавиши</h2><button class="close" aria-label="Закрыть">×</button></div>
+<p>Нажмите поле напротив макроса и введите сочетание клавиш.</p>
+<div class="table-scroll" tabindex="0" aria-label="Таблица горячих клавиш"><table><thead><tr><th scope="col">Макрос</th><th scope="col">Горячая клавиша</th></tr></thead><tbody id="hk-rows"></tbody></table></div>
+<div id="hk-message" class="notice" role="status">Используйте Ctrl, Alt или Shift вместе с буквой, цифрой или F-клавишей.</div>
+<p class="footnote">Сочетания работают, пока SW Tools Hub открыт.</p>
+<div class="entry-buttons"><button id="hk-cancel">Отмена</button><button id="hk-save" class="primary" disabled>Сохранить</button></div></dialog>
+<script>
+const hk=document.getElementById('hotkeys'),message=document.getElementById('hk-message'),save=document.getElementById('hk-save');
+const items=[['frame','Авторазмер Рамы','Чертежи'],['drill','Свердловка','Чертежи'],['dxf','Экспорт DXF','Лазер'],['pdf','Экспорт PDF','Чертежи'],['bom','Спецификация','Сборки'],['rename','Обозначения компонентов','Сборки'],['cut','Карта раскроя','Лазер'],['views','Обновление видов','Чертежи']];
+let bindings={frame:'Ctrl + Alt + R',dxf:'Ctrl + Alt + D'},draft={},dirty=false,invalid=new Map();
+const toolbar=document.createElement('button');toolbar.id='shortcut-toolbar';toolbar.title='Горячие клавиши';toolbar.setAttribute('aria-label','Горячие клавиши');toolbar.style.color='#C6532E';toolbar.innerHTML='<svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M6 9h.1M10 9h.1M14 9h.1M18 9h.1M6 12h.1M10 12h.1M14 12h.1M18 12h.1M7 16h10"/></svg>';document.querySelector('.toolbar').prepend(toolbar);
+function validate(){invalid.clear();const seen={};for(const input of hk.querySelectorAll('input')){input.classList.remove('invalid');input.removeAttribute('aria-invalid');const value=input.value;if(!value)continue;if(seen[value]){invalid.set(input.dataset.id,seen[value]);input.classList.add('invalid');input.setAttribute('aria-invalid','true');}else seen[value]=input.dataset.id;}save.disabled=!dirty||invalid.size>0;message.className='notice'+(invalid.size?' error':'');if(invalid.size){const [id,other]=[...invalid][0];message.replaceChildren();const strong=document.createElement('strong');strong.textContent=draft[id]+' уже назначено: '+items.find(x=>x[0]===other)[1]+'.';message.append(strong,document.createElement('br'),'Выберите другое сочетание. Сохранение заблокировано.');}else message.textContent='Используйте Ctrl, Alt или Shift вместе с буквой, цифрой или F-клавишей.';}
+function render(){const rows=document.getElementById('hk-rows');rows.replaceChildren();for(const [id,name,category] of items){const tr=document.createElement('tr'),td=document.createElement('td'),key=document.createElement('td'),group=document.createElement('div'),input=document.createElement('input'),clear=document.createElement('button'),small=document.createElement('small');small.textContent=category;td.append(name,small);group.className='key-field';input.readOnly=true;input.value=draft[id]||'';input.dataset.id=id;input.placeholder='Нажмите сочетание';input.setAttribute('aria-label','Горячая клавиша: '+name);input.onkeydown=e=>{if(['Tab','Escape'].includes(e.key))return;e.preventDefault();if(['Control','Alt','Shift','Meta'].includes(e.key))return;if(!(e.ctrlKey||e.altKey||e.shiftKey)||e.metaKey||!/^(Key[A-Z]|Digit[0-9]|F([1-9]|1[0-9]|2[0-4]))$/.test(e.code)){message.className='notice error';message.textContent='Добавьте Ctrl, Alt или Shift к букве, цифре или F-клавише.';return;}input.value=[e.ctrlKey?'Ctrl':null,e.altKey?'Alt':null,e.shiftKey?'Shift':null,e.code.replace(/^Key|^Digit/,'')].filter(Boolean).join(' + ');draft[id]=input.value;dirty=true;validate();};clear.className='clear';clear.textContent='×';clear.setAttribute('aria-label','Удалить сочетание: '+name);clear.onclick=()=>{delete draft[id];input.value='';dirty=true;validate();input.focus();};group.append(input,clear);key.append(group);tr.append(td,key);rows.append(tr);}}
+toolbar.onclick=()=>{draft={...bindings};dirty=false;render();validate();hk.showModal();};save.onclick=()=>{validate();if(invalid.size||!dirty)return;bindings={...draft};hk.close();};document.getElementById('hk-cancel').onclick=()=>hk.close();hk.querySelector('.close').onclick=()=>hk.close();
+</script>
+
+</body></html>

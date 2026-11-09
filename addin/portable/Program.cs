@@ -29,6 +29,8 @@ namespace SWToolsHub.Portable
         private readonly Label status = new Label { Dock = DockStyle.Bottom, Height = 90, AutoEllipsis = true };
         private Macro[] macros = new Macro[0];
         private bool busy;
+        private bool editingHotkeys;
+        private HotkeyService hotkeys;
         private string macroFolder;
         private readonly ToolTip tips = new ToolTip();
         private readonly TableLayoutPanel moduleGrid = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 4, RowCount = 1, Margin = new Padding(20, 4, 20, 8) };
@@ -56,12 +58,12 @@ namespace SWToolsHub.Portable
         private Settings settings = new Settings();
         public sealed class Settings {
             public string Folder { get; set; }
+            public Dictionary<string, int> Hotkeys { get; set; } = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
             public List<string> Favorites { get; set; } = new List<string>();
             public Dictionary<string, string> Entries { get; set; } = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         }
         private void SaveSettings() {
-            Directory.CreateDirectory(Path.GetDirectoryName(settingsPath));
-            File.WriteAllText(settingsPath, new JavaScriptSerializer().Serialize(settings));
+            SettingsFile.Write(settingsPath, new JavaScriptSerializer().Serialize(settings));
         }
         private void ReloadFolder() {
             if (busy) return;
@@ -83,13 +85,16 @@ namespace SWToolsHub.Portable
             shell.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
             foreach (var height in new[] { 76, 56, 30, 120 }) shell.RowStyles.Add(new RowStyle(SizeType.Absolute, height));
             shell.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-            header = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 1, Padding = new Padding(20, 12, 16, 12) };
+            header = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 3, RowCount = 1, Padding = new Padding(20, 12, 16, 12) };
             header.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-            for (int i = 0; i < 1; i++) header.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, Px(52)));
+            for (int i = 0; i < 2; i++) header.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, Px(52)));
             var brand = new Label { Text = "SW Tools Hub", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft, Font = titleFont };
             var choose = MakeButton("");
             ConfigureIcon(choose, "folder", "Выбрать корневую папку библиотеки");
-            header.Controls.Add(brand, 0, 0); header.Controls.Add(choose, 1, 0);
+            var shortcuts = MakeButton("");
+            ConfigureIcon(shortcuts, "keyboard", "Горячие клавиши");
+            shortcuts.Click += (s, e) => EditHotkeys();
+            header.Controls.Add(brand, 0, 0); header.Controls.Add(shortcuts, 1, 0); header.Controls.Add(choose, 2, 0);
             searchBox = new RoundedPanel { Dock = DockStyle.Fill, Padding = new Padding(12, 12, 12, 8), Margin = new Padding(20, 0, 20, 8), BackColor = Surface };
             search.BackColor = Surface; search.ForeColor = Foreground; search.AccessibleName = "Поиск макросов";
             searchBox.Controls.Add(search); tips.SetToolTip(search, "Поиск по выбранному разделу; на главной — по всей библиотеке");
@@ -119,7 +124,7 @@ namespace SWToolsHub.Portable
                 } catch (Exception ex) { ShowError("Не удалось выбрать папку: " + ex.Message); }
             };
             refresh.Tick += (s, e) => ReloadFolder();
-            FormClosed += (s, e) => { refresh.Dispose(); tips.Dispose(); titleFont.Dispose(); };
+            FormClosed += (s, e) => { refresh.Dispose(); hotkeys?.Dispose(); tips.Dispose(); titleFont.Dispose(); };
             search.TextChanged += (s, e) => Filter();
             FormClosing += (s, e) => { if (busy) e.Cancel = true; };
             Shown += (s, e) => {
@@ -127,11 +132,13 @@ namespace SWToolsHub.Portable
                     if (File.Exists(settingsPath)) settings = new JavaScriptSerializer().Deserialize<Settings>(File.ReadAllText(settingsPath)) ?? new Settings();
                 } catch { settings = new Settings(); }
                 if (settings.Favorites == null) settings.Favorites = new List<string>();
-                if (settings.Entries == null) settings.Entries = new Dictionary<string, string>();
+                settings.Entries = new Dictionary<string, string>(settings.Entries ?? new Dictionary<string, string>(), StringComparer.OrdinalIgnoreCase);
+                settings.Hotkeys = new Dictionary<string, int>(settings.Hotkeys ?? new Dictionary<string, int>(), StringComparer.OrdinalIgnoreCase);
                 macroFolder = string.IsNullOrWhiteSpace(settings.Folder) ? Path.Combine(root, "Library", "Macros") : settings.Folder;
                 folderLabel.Text = macroFolder;
                 try { MacroFolder.EnsureModules(macroFolder); } catch (Exception ex) { status.Text = "Не удалось создать папки разделов: " + ex.Message; }
                 ReloadFolder(); RefreshLayout(); refresh.Start();
+                RestoreHotkeys();
             };
         }
         private void Filter()
@@ -149,7 +156,7 @@ namespace SWToolsHub.Portable
         }
         private void ConfigureIcon(Button button, string icon, string description)
         {
-            StyleButton(button); ((RoundedButton)button).IconOnly = true; ((RoundedButton)button).AccentHover = icon == "play" || icon == "folder"; button.BackColor = UiTheme.IconSurface; button.ForeColor = UiTheme.IconInk; button.Text = ""; button.Dock = DockStyle.Fill;
+            StyleButton(button); ((RoundedButton)button).IconOnly = true; ((RoundedButton)button).AccentHover = icon == "play" || icon == "folder" || icon == "keyboard"; button.BackColor = UiTheme.IconSurface; button.ForeColor = UiTheme.IconInk; button.Text = ""; button.Dock = DockStyle.Fill;
             ((RoundedButton)button).IconSize = Px(24);
             button.Margin = new Padding(Px(2)); button.Padding = new Padding(0);
             button.Image = DrawIcon(icon); button.ImageAlign = ContentAlignment.MiddleCenter;
@@ -165,7 +172,12 @@ namespace SWToolsHub.Portable
                 g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
                 pen.StartCap = pen.EndCap = System.Drawing.Drawing2D.LineCap.Round;
                 pen.LineJoin = System.Drawing.Drawing2D.LineJoin.Round;
-                if (kind == "folder") g.DrawPolygon(pen, new[] { new Point(3, 6), new Point(10, 6), new Point(12, 9), new Point(21, 9), new Point(21, 19), new Point(3, 19) });
+                if (kind == "keyboard") {
+                    g.DrawRectangle(pen, 2, 5, 20, 14);
+                    foreach (int y in new[] { 9, 12 }) foreach (int x in new[] { 6, 10, 14, 18 }) g.DrawLine(pen, x, y, x + .2f, y);
+                    g.DrawLine(pen, 7, 16, 17, 16);
+                }
+                else if (kind == "folder") g.DrawPolygon(pen, new[] { new Point(3, 6), new Point(10, 6), new Point(12, 9), new Point(21, 9), new Point(21, 19), new Point(3, 19) });
                 else if (kind == "play") g.DrawPolygon(pen, new[] { new Point(8, 4), new Point(20, 12), new Point(8, 20) });
                 else if (kind == "part") {
                     g.DrawPolygon(pen, new[] { new Point(12,3),new Point(21,8),new Point(21,18),new Point(12,23),new Point(3,18),new Point(3,8) });
@@ -228,7 +240,7 @@ namespace SWToolsHub.Portable
                 var heights = new[] { Px(76), Math.Max(Px(56), Font.Height + Px(28)), Math.Max(Px(30), Font.Height + Px(4)), Px(narrow ? 240 : 120) };
                 for (int i = 0; i < heights.Length; i++) shell.RowStyles[i].Height = heights[i];
                 header.Padding = Space(20, 12, 16, 12);
-                header.ColumnStyles[1].Width = Px(52);
+                for (int i = 1; i < header.ColumnStyles.Count; i++) header.ColumnStyles[i].Width = Px(52);
                 foreach (var button in header.Controls.OfType<RoundedButton>()) {
                     button.Dock = DockStyle.None; button.Anchor = AnchorStyles.None;
                     button.Size = new Size(Px(46), Px(46)); button.IconSize = Px(24); button.Margin = new Padding(Px(2));
@@ -331,6 +343,61 @@ namespace SWToolsHub.Portable
             count.Text = macros.Length + " инструментов · Portable";
             content.ResumeLayout();
         }
+        private void RestoreHotkeys()
+        {
+            hotkeys = new HotkeyService(new NativeHotkeys(Handle));
+            var available = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            var failures = new List<string>();
+            foreach (var pair in settings.Hotkeys) {
+                available[pair.Key] = pair.Value;
+                string error;
+                if (!hotkeys.TryApply(available, out error)) {
+                    available.Remove(pair.Key); failures.Add(Path.GetFileNameWithoutExtension(pair.Key) + ": " + error);
+                }
+            }
+            if (failures.Count > 0) ShowError("Не все горячие клавиши включены. Назначения сохранены; исправьте их кнопкой клавиатуры.\n\n" + string.Join("\n", failures));
+        }
+        private void EditHotkeys()
+        {
+            if (busy || editingHotkeys || hotkeys == null) return;
+            editingHotkeys = true;
+            var active = hotkeys.Snapshot(); string ignored;
+            hotkeys.TryApply(new Dictionary<string, int>(), out ignored);
+            bool saved = false;
+            try {
+                // Freeze the table while it is open; new files appear on the next opening.
+                var current = MacroFolder.Scan(macroFolder);
+                using (var dialog = new HotkeyDialog(current, settings.Hotkeys, next => {
+                    string error;
+                    if (!hotkeys.TryApply(next, out error)) return error;
+                    var previous = settings.Hotkeys;
+                    settings.Hotkeys = next;
+                    try { SaveSettings(); }
+                    catch (Exception ex) {
+                        settings.Hotkeys = previous;
+                        hotkeys.TryApply(new Dictionary<string, int>(), out ignored);
+                        return "Не удалось сохранить назначения: " + ex.Message;
+                    }
+                    saved = true; return null;
+                })) dialog.ShowDialog(this);
+            } catch (Exception ex) { ShowError("Не удалось открыть горячие клавиши: " + ex.Message); }
+            finally {
+                if (!saved && !hotkeys.TryApply(active, out ignored)) ShowError(ignored);
+                editingHotkeys = false;
+            }
+        }
+        protected override void WndProc(ref Message m)
+        {
+            if (m.Msg == 0x0312) { // WM_HOTKEY arrives on the main STA UI thread.
+                string path = hotkeys?.Resolve(m.WParam.ToInt32());
+                if (path != null && !busy && !editingHotkeys && Enabled) {
+                    // Do not queue a run: a stale registration or changed library cannot redirect it.
+                    RunSelected(new Macro { id = path });
+                }
+                return;
+            }
+            base.WndProc(ref m);
+        }
         private void ShowError(string text) { status.Text = text; MessageBox.Show(this, text, "SW Tools Hub", MessageBoxButtons.OK, MessageBoxIcon.Warning); }
         private void RunSelected(Macro selected, bool chooseEntry = false)
         {
@@ -342,8 +409,8 @@ namespace SWToolsHub.Portable
             {
                 // All automation is on this application's STA UI thread; COM marshals
                 // calls into the running SolidWorks process. No worker threads.
-                var macro = MacroFolder.Scan(macroFolder).SingleOrDefault(m => m.id == selected.id);
-                if (macro == null) throw new InvalidDataException("Инструмент удалён из каталога. Перезапустите приложение.");
+                var macro = MacroFolder.Scan(macroFolder).SingleOrDefault(m => string.Equals(m.id, selected.id, StringComparison.OrdinalIgnoreCase));
+                if (macro == null) throw new InvalidDataException("Макрос недоступен в выбранной библиотеке. Проверьте файл и папку библиотеки; назначение можно удалить кнопкой клавиатуры.");
                 var path = macro.id;
                 if (!File.Exists(path)) throw new FileNotFoundException("Файл больше не существует: " + path);
                 try { sw = (SldWorks)Marshal.GetActiveObject("SldWorks.Application"); }
