@@ -229,3 +229,15 @@ setConnection(true);render();setConnection(true);
 </body></html>
 
 <style>.macro-row{min-height:84px}</style>
+
+<style>
+body{font-size:14.667px}.window{height:633px}.header{height:60px}.hint{font-size:14.667px}
+.header>.connection{border:0;margin:0;padding:0;flex:1;min-width:0;font-size:14.667px;justify-content:flex-start}.header .connection .document{margin-left:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.macro-row{min-height:72px}.macro-name small,.tile small{font-size:13.333px}
+#hotkeys td,#hotkeys input,#entry-dialog label,#entry-dialog select,#entry-reload,#hotkeys .entry-buttons button,#entry-dialog .entry-buttons button{font-size:14.667px}
+</style>
+<script>
+document.querySelector('.header strong').remove();
+document.querySelector('.header').prepend(connection);
+setConnection=function(connected){connection.classList.toggle('offline',!connected);connection.innerHTML='<span class="dot" style="background:'+(connected?'#419150':'#BE4132')+'"></span><span class="document">'+(connected?'Чертёж · УГВС-300М':'Документ не открыт')+'</span>';connection.title=connected?'SolidWorks подключён':'SolidWorks не найден';document.querySelectorAll('.row-play').forEach(b=>b.disabled=!connected)};setConnection(true);
+</script>

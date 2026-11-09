@@ -6,7 +6,8 @@ namespace SWToolsHub { public class Macro { public string id, file, name, module
 class Tests {
  static void Main() {
   var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString()); Directory.CreateDirectory(root);
-  void Check(bool ok) { if (!ok) throw new Exception("Folder check failed"); }
+  int checks = 0;
+  void Check(bool ok) { checks++; if (!ok) throw new Exception("Folder check failed"); }
   try {
    Check(MacroFolder.Scan(root).Length == 0);
    foreach (var name in new [] {"Свердловка (2).swp", "Авторазмер Рамы.swp", "Новый.SWP", "ignore.txt"}) File.WriteAllBytes(Path.Combine(root,name), Array.Empty<byte>());
@@ -45,7 +46,30 @@ class Tests {
    Check(MacroEntry.FromCom(array).Length == 2);
    Check(MacroEntry.Parse(".main") == null && MacroEntry.Parse("A.") == null);
    Check(MacroEntry.Parse("  InsertWeldWithHoles.start  ").Module == "InsertWeldWithHoles");
-   Console.WriteLine("27 folder and procedure checks passed; no real macros used.");
+   var app = Path.Combine(root, "New", "SW-Assistant");
+   var local = Path.Combine(app, "Library", "Macros");
+   MacroFolder.EnsureModules(local);
+   File.WriteAllBytes(Path.Combine(local, "Чертежи", "Авторазмер Рамы.swp"), Array.Empty<byte>());
+   Check(MacroFolder.Scan(local).Single().category == "Чертежи");
+   Check(MacroFolder.NormalizeRoot(app) == local);
+   Check(MacroFolder.NormalizeRoot(Path.Combine(app, "Library")) == local);
+   Check(MacroFolder.NormalizeRoot(local) == local);
+   Check(MacroFolder.NormalizeRoot(Path.Combine(local, "Чертежи")) == local);
+   Check(MacroFolder.ResolveStartup(null, app) == local);
+   var old = Path.Combine(root, "Old", "SWToolsHub", "Library", "Macros");
+   MacroFolder.EnsureModules(old);
+   Check(MacroFolder.ResolveStartup(old, app) == local);
+   File.WriteAllBytes(Path.Combine(old, "Чертежи", "User.swp"), Array.Empty<byte>());
+   Check(MacroFolder.ResolveStartup(old, app) == old);
+   var custom = Path.Combine(root, "Custom"); Directory.CreateDirectory(custom);
+   Check(MacroFolder.ResolveStartup(custom, app) == custom);
+   Check(File.Exists(Path.Combine(old, "Чертежи", "User.swp")));
+   File.Delete(Path.Combine(local, "Чертежи", "Авторазмер Рамы.swp"));
+   File.Delete(Path.Combine(old, "Чертежи", "User.swp"));
+   Check(MacroFolder.ResolveStartup(old, app) == old);
+   File.WriteAllBytes(Path.Combine(local, "Чертежи", "Late.swp"), Array.Empty<byte>());
+   Check(MacroFolder.ResolveStartup(old, app) == local);
+   Console.WriteLine($"{checks} folder, library relocation and procedure checks passed; no real macros used.");
   } finally { Directory.Delete(root,true); }
  }
 }

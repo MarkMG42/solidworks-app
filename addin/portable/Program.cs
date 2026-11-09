@@ -28,7 +28,6 @@ namespace SWToolsHub.Portable
         private Macro selectedMacro;
         private readonly Label connection = new Label { Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft, AutoEllipsis = true, UseMnemonic = false };
         private readonly Label activeDocument = new Label { Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleRight, AutoEllipsis = true, UseMnemonic = false };
-        private RoundedPanel connectionFrame;
         private bool connectionReady;
         private bool checkingConnection;
         private readonly Label status = new Label { Dock = DockStyle.Bottom, Height = 90, AutoEllipsis = true };
@@ -73,9 +72,21 @@ namespace SWToolsHub.Portable
         private void SaveSettings() {
             SettingsFile.Write(settingsPath, new JavaScriptSerializer().Serialize(settings));
         }
+        private void UpdateLibraryTip()
+        {
+            var choose = header.GetControlFromPosition(3, 0);
+            string tip = "Текущая библиотека: " + macroFolder + "\nВыбрать другую папку";
+            if (tips.GetToolTip(choose) != tip) tips.SetToolTip(choose, tip);
+        }
         private void ReloadFolder() {
             if (busy) return;
             try {
+                string resolved = MacroFolder.ResolveStartup(settings.Folder, root);
+                if (!string.Equals(macroFolder, resolved, StringComparison.OrdinalIgnoreCase)) {
+                    macroFolder = resolved; settings.Folder = resolved;
+                    viewState.Invalidate();
+                }
+                UpdateLibraryTip();
                 var next = MacroFolder.Scan(macroFolder);
                 bool changed = !next.Select(m => m.id).SequenceEqual(macros.Select(m => m.id));
                 if (changed) { macros = next; viewState.Invalidate(); Filter(); }
@@ -92,20 +103,20 @@ namespace SWToolsHub.Portable
             StartPosition = FormStartPosition.CenterScreen;
             Font = UiTheme.CreateFont(); titleFont = UiTheme.CreateSemiBoldFont(); connectionFont = new Font(Font.FontFamily, 11f);
             connection.Font = activeDocument.Font = connectionFont; BackColor = Background; ForeColor = Foreground;
-            shell = new TableLayoutPanel { ColumnCount = 1, RowCount = 6, Padding = new Padding(0) };
+            shell = new TableLayoutPanel { ColumnCount = 1, RowCount = 5, Padding = new Padding(0) };
             shell.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-            foreach (var height in new[] { 76, 46, 56, 30, 120 }) shell.RowStyles.Add(new RowStyle(SizeType.Absolute, height));
+            foreach (var height in new[] { 60, 50, 26, 106 }) shell.RowStyles.Add(new RowStyle(SizeType.Absolute, height));
             shell.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-            header = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 3, RowCount = 1, Padding = new Padding(20, 12, 16, 12) };
+            header = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 4, RowCount = 1, Padding = new Padding(20, 6, 16, 6) };
+            header.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 22));
             header.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
             for (int i = 0; i < 2; i++) header.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, Px(52)));
-            var brand = new Label { Text = "SW-Assistant", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft, Font = titleFont };
             var choose = MakeButton("");
             ConfigureIcon(choose, "folder", "Выбрать корневую папку библиотеки");
             var shortcuts = MakeButton("");
             ConfigureIcon(shortcuts, "keyboard", "Горячие клавиши");
             shortcuts.Click += (s, e) => EditHotkeys();
-            header.Controls.Add(brand, 0, 0); header.Controls.Add(shortcuts, 1, 0); header.Controls.Add(choose, 2, 0);
+            header.Controls.Add(connection, 0, 0); header.Controls.Add(activeDocument, 1, 0); header.Controls.Add(shortcuts, 2, 0); header.Controls.Add(choose, 3, 0);
             searchBox = new RoundedPanel { Dock = DockStyle.Fill, Padding = new Padding(12, 12, 12, 8), Margin = new Padding(20, 0, 20, 8), BackColor = Surface };
             search.BackColor = Surface; search.ForeColor = Foreground; search.AccessibleName = "Поиск макросов";
             searchBox.Controls.Add(search); tips.SetToolTip(search, "Поиск по выбранному разделу; на главной — по всей библиотеке");
@@ -116,16 +127,15 @@ namespace SWToolsHub.Portable
             for (int i = 0; i < 4; i++) moduleGrid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25));
             moduleGrid.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
             count.Padding = new Padding(20, 0, 0, 0); count.ForeColor = Muted;
-            connectionFrame = new RoundedPanel { Dock = DockStyle.Fill, BackColor = Surface, Margin = new Padding(20, 0, 20, 8), Padding = new Padding(12, 0, 12, 0) };
-            var connectionLayout = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 1 };
-            connectionLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50)); connectionLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
-            connection.Text = "Проверка SolidWorks…"; connection.ForeColor = Muted; activeDocument.ForeColor = Muted;
-            connectionLayout.Controls.Add(connection, 0, 0); connectionLayout.Controls.Add(activeDocument, 1, 0); connectionFrame.Controls.Add(connectionLayout);
-            shell.Controls.Add(header, 0, 0); shell.Controls.Add(connectionFrame, 0, 1); shell.Controls.Add(searchBox, 0, 2); shell.Controls.Add(heading, 0, 3);
+            connection.Text = "●"; connection.ForeColor = Color.FromArgb(190, 65, 50);
+            connection.TextAlign = ContentAlignment.MiddleCenter;
+            activeDocument.TextAlign = ContentAlignment.MiddleLeft;
+            activeDocument.ForeColor = Muted;
+            shell.Controls.Add(header, 0, 0); shell.Controls.Add(searchBox, 0, 1); shell.Controls.Add(heading, 0, 2);
             libraryFrame = new RoundedPanel { Dock = DockStyle.Fill, BackColor = Surface, Margin = new Padding(20, 10, 20, 20), Padding = new Padding(14, 10, 14, 12) };
             content.BackColor = Surface; content.Padding = new Padding(0);
             libraryFrame.Controls.Add(content);
-            shell.Controls.Add(moduleGrid, 0, 4); shell.Controls.Add(libraryFrame, 0, 5);
+            shell.Controls.Add(moduleGrid, 0, 3); shell.Controls.Add(libraryFrame, 0, 4);
             viewport.Controls.Add(shell); Controls.Add(viewport);
             viewport.SizeChanged += (s, e) => RefreshLayout();
             choose.Click += (s, e) => {
@@ -133,6 +143,7 @@ namespace SWToolsHub.Portable
                 try {
                     var selectedFolder = FolderPicker.Choose(Handle, macroFolder);
                     if (selectedFolder == null) return;
+                    selectedFolder = MacroFolder.NormalizeRoot(selectedFolder);
                     MacroFolder.EnsureModules(selectedFolder);
                     settings.Folder = selectedFolder; SaveSettings(); macroFolder = selectedFolder;
                     tips.SetToolTip(choose, "Библиотека: " + macroFolder + "\nВыбрать другую корневую папку");
@@ -153,7 +164,7 @@ namespace SWToolsHub.Portable
                 settings.Descriptions = new Dictionary<string, string>(settings.Descriptions ?? new Dictionary<string, string>(), StringComparer.OrdinalIgnoreCase);
                 settings.Entries = new Dictionary<string, string>(settings.Entries ?? new Dictionary<string, string>(), StringComparer.OrdinalIgnoreCase);
                 settings.Hotkeys = new Dictionary<string, int>(settings.Hotkeys ?? new Dictionary<string, int>(), StringComparer.OrdinalIgnoreCase);
-                macroFolder = string.IsNullOrWhiteSpace(settings.Folder) ? Path.Combine(root, "Library", "Macros") : settings.Folder;
+                macroFolder = MacroFolder.ResolveStartup(settings.Folder, root);
                 folderLabel.Text = macroFolder;
                 try { MacroFolder.EnsureModules(macroFolder); } catch (Exception ex) { status.Text = "Не удалось создать папки разделов: " + ex.Message; }
                 ReloadFolder(); RefreshLayout(); refresh.Start();
@@ -260,16 +271,16 @@ namespace SWToolsHub.Portable
                 shell.SuspendLayout();
                 shell.Width = Math.Max(1, viewportWidth - reservedScrollbar);
                 shell.Margin = new Padding(0);
-                var heights = new[] { Px(76), Px(46), Math.Max(Px(56), Font.Height + Px(28)), Math.Max(Px(30), Font.Height + Px(4)), Px(narrow ? 240 : 120) };
+                var heights = new[] { Px(60), Math.Max(Px(50), Font.Height + Px(22)), Math.Max(Px(26), Font.Height + Px(4)), Px(narrow ? 212 : 106) };
                 for (int i = 0; i < heights.Length; i++) shell.RowStyles[i].Height = heights[i];
-                header.Padding = Space(20, 12, 16, 12);
-                for (int i = 1; i < header.ColumnStyles.Count; i++) header.ColumnStyles[i].Width = Px(52);
+                header.Padding = Space(20, 6, 16, 6);
+                header.ColumnStyles[0].Width = Px(22);
+                for (int i = 2; i < header.ColumnStyles.Count; i++) header.ColumnStyles[i].Width = Px(52);
                 foreach (var button in header.Controls.OfType<RoundedButton>()) {
                     button.Dock = DockStyle.None; button.Anchor = AnchorStyles.None;
                     button.Size = new Size(Px(46), Px(46)); button.IconSize = Px(20.4f); button.Margin = new Padding(Px(2));
                 }
                 searchBox.Padding = Space(12, 12, 12, 8); searchBox.Margin = Space(20, 0, 20, 8);
-                connectionFrame.Margin = Space(20, 0, 20, 8); connectionFrame.Padding = Space(12, 0, 12, 0);
                 heading.Padding = Space(20, 0, 0, 0);
                 moduleGrid.Margin = Space(20, 4, 20, 8);
                 libraryFrame.Margin = Space(20, 10, 20, 20); libraryFrame.Padding = Space(14, 10, 14, 12);
@@ -284,13 +295,13 @@ namespace SWToolsHub.Portable
                 shell.ResumeLayout(true);
                 int visibleCount = VisibleMacros().Length;
                 bool home = section == null && string.IsNullOrWhiteSpace(search.Text);
-                int listHeight = Px(44) + (visibleCount == 0 ? Px(100) : visibleCount * (Px(84) + Px(4)));
+                int listHeight = Px(44) + (visibleCount == 0 ? Px(100) : visibleCount * (Px(72) + Px(4)));
                 if (home && macros.Any(m => m.category == "Без раздела")) listHeight += Px(48);
                 int frameHeight = Math.Max(Px(240), listHeight + libraryFrame.Padding.Vertical + libraryFrame.Margin.Vertical);
-                shell.RowStyles[5].SizeType = SizeType.Absolute;
+                shell.RowStyles[4].SizeType = SizeType.Absolute;
                 int naturalHeight = heights.Sum() + frameHeight;
                 int pageHeight = Math.Max(viewport.ClientSize.Height, naturalHeight);
-                shell.RowStyles[5].Height = frameHeight + pageHeight - naturalHeight;
+                shell.RowStyles[4].Height = frameHeight + pageHeight - naturalHeight;
                 shell.Height = pageHeight;
                 viewport.AutoScrollMinSize = new Size(0, pageHeight);
                 shell.Location = new Point(0, viewport.AutoScrollPosition.Y);
@@ -334,7 +345,7 @@ namespace SWToolsHub.Portable
             content.Controls.Add(new Label { Text = title, Margin = new Padding(0), Width = width, Height = Px(44), TextAlign = ContentAlignment.MiddleLeft, Font = titleFont });
             var visible = VisibleMacros();
             foreach (var macro in visible) {
-                var row = new TableLayoutPanel { Width = width, Height = Px(84), ColumnCount = 4, RowCount = 1, Margin = Space(0, 0, 0, 4) };
+                var row = new TableLayoutPanel { Width = width, Height = Px(72), ColumnCount = 4, RowCount = 1, Margin = Space(0, 0, 0, 4) };
                 row.Paint += (s, e) => { using (var pen = new Pen(UiTheme.Border)) e.Graphics.DrawLine(pen, 0, row.Height - 1, row.Width, row.Height - 1); };
                 row.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, Px(52))); row.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100)); row.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, Px(uiScale <= .8f ? 0 : 128))); row.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, Px(52)));
                 bool favorite = settings.Favorites.Contains(macro.id, StringComparer.OrdinalIgnoreCase);
@@ -367,7 +378,7 @@ namespace SWToolsHub.Portable
                 play.Click += (s, e) => { selectedMacro = macro; RunSelected(macro, true); };
                 row.Controls.Add(star, 0, 0); row.Controls.Add(name, 1, 0); row.Controls.Add(shortcutLabel, 2, 0); row.Controls.Add(play, 3, 0); content.Controls.Add(row);
             }
-            if (visible.Length == 0) content.Controls.Add(new Label { Text = macros.Length == 0 ? "Библиотека макросов пуста" : home ? "Нажмите ☆ рядом с макросом в разделе, чтобы добавить его в избранное." : "Макросов пока нет. Добавьте .swp в папку раздела или измените запрос поиска.", Margin = new Padding(0), Width = width, Height = Px(100), ForeColor = Muted });
+            if (visible.Length == 0) content.Controls.Add(new Label { Text = macros.Length == 0 ? "Библиотека макросов пуста\n" + macroFolder + "\nВыберите папку библиотеки кнопкой папки." : home ? "Нажмите ☆ рядом с макросом в разделе, чтобы добавить его в избранное." : "Макросов пока нет. Добавьте .swp в папку раздела или измените запрос поиска.", Margin = new Padding(0), Width = width, Height = Px(100), ForeColor = Muted });
             if (home) {
                 if (macros.Any(m => m.category == "Без раздела")) {
                     var unsorted = MakeButton("Без раздела →"); unsorted.Width = width; unsorted.Margin = Space(0, 0, 0, 4); unsorted.Click += (s, e) => Navigate("Без раздела"); content.Controls.Add(unsorted);
@@ -382,10 +393,10 @@ namespace SWToolsHub.Portable
             checkingConnection = true;
             SldWorks sw = null; ModelDoc2 document = null;
             string state = "SolidWorks не найден", documentText = "Откройте SolidWorks", fullPath = "";
-            bool ready = false;
+            bool ready = false, connected = false;
             try {
                 sw = (SldWorks)Marshal.GetActiveObject("SldWorks.Application");
-                state = "SolidWorks подключён"; document = sw.IActiveDoc2;
+                connected = true; state = "SolidWorks подключён"; document = sw.IActiveDoc2;
                 documentText = "Документ не открыт";
                 if (document != null) {
                     fullPath = document.GetPathName();
@@ -393,15 +404,15 @@ namespace SWToolsHub.Portable
                     ready = true;
                 }
             } catch (COMException ex) {
-                state = "SolidWorks не найден"; documentText = "Откройте SolidWorks";
-                if (ex.ErrorCode == unchecked((int)0x80010001) || ex.ErrorCode == unchecked((int)0x8001010A)) { state = "SolidWorks занят"; documentText = "Ожидание ответа…"; }
-            } catch { state = "Нет ответа SolidWorks"; documentText = "Повторная проверка через 2 секунды"; }
+                connected = false; state = "SolidWorks не найден"; documentText = "Откройте SolidWorks";
+                if (ex.ErrorCode == unchecked((int)0x80010001) || ex.ErrorCode == unchecked((int)0x8001010A)) { connected = true; state = "SolidWorks занят"; documentText = "Ожидание ответа…"; }
+            } catch { connected = false; state = "Нет ответа SolidWorks"; documentText = "Повторная проверка через 2 секунды"; }
             finally { Release(document); Release(sw); checkingConnection = false; }
-            if (connection.Text != state) connection.Text = state;
+            if (tips.GetToolTip(connection) != state) tips.SetToolTip(connection, state);
             if (activeDocument.Text != documentText) activeDocument.Text = documentText;
             string documentTip = string.IsNullOrEmpty(fullPath) ? documentText : fullPath;
             if (tips.GetToolTip(activeDocument) != documentTip) tips.SetToolTip(activeDocument, documentTip);
-            connection.ForeColor = ready ? Color.FromArgb(86, 117, 75) : Muted;
+            connection.ForeColor = connected ? Color.FromArgb(65, 145, 80) : Color.FromArgb(190, 65, 50);
             if (connectionReady != ready) {
                 connectionReady = ready;
                 foreach (var row in content.Controls.OfType<TableLayoutPanel>())

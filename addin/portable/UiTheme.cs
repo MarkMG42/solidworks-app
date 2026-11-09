@@ -44,18 +44,18 @@ namespace SWToolsHub.Portable
         public static Font CreateRegularFont()
         {
             foreach (var family in fonts.Families)
-                if (family.Name == "Source Sans 3" && family.IsStyleAvailable(FontStyle.Regular)) return new Font(family, 14f, FontStyle.Regular);
-            return new Font("Segoe UI", 14f, FontStyle.Regular);
+                if (family.Name == "Source Sans 3" && family.IsStyleAvailable(FontStyle.Regular)) return new Font(family, 11f, FontStyle.Regular);
+            return new Font("Segoe UI", 11f, FontStyle.Regular);
         }
-        public static Font CreateSemiBoldFont()
+        public static Font CreateSemiBoldFont(float size = 14f)
         {
             foreach (var family in fonts.Families)
-                if (family.Name.IndexOf("Semibold", StringComparison.OrdinalIgnoreCase) >= 0) return new Font(family, 14f, FontStyle.Regular);
-            return new Font("Segoe UI Semibold", 14f, FontStyle.Regular);
+                if (family.Name.IndexOf("Semibold", StringComparison.OrdinalIgnoreCase) >= 0) return new Font(family, size, FontStyle.Regular);
+            return new Font("Segoe UI Semibold", size, FontStyle.Regular);
         }
         public static void StyleAction(RoundedButton button, bool primary = false)
         {
-            var ownedFont = primary ? CreateSemiBoldFont() : CreateRegularFont();
+            var ownedFont = primary ? CreateSemiBoldFont(11f) : CreateRegularFont();
             button.Font = ownedFont; button.Disposed += (s, e) => ownedFont.Dispose();
             button.FlatStyle = FlatStyle.Flat; button.FlatAppearance.BorderSize = 0;
             button.BackColor = primary ? AccentInk : Background; button.ForeColor = primary ? Color.White : Text;
@@ -191,7 +191,7 @@ namespace SWToolsHub.Portable
                 var detailBounds = new Rectangle(titleBounds.Left, titleBounds.Bottom + 2, titleBounds.Width, lineHeight);
                 var lineFlags = TextFormatFlags.Left | TextFormatFlags.SingleLine | TextFormatFlags.EndEllipsis;
                 TextRenderer.DrawText(e.Graphics, Text, Font, titleBounds, textColor, lineFlags);
-                using (var detailFont = new Font(Font.FontFamily, Math.Max(8, Font.Size - 3), FontStyle.Regular))
+                using (var detailFont = new Font(Font.FontFamily, Math.Max(9, Font.Size - 1), FontStyle.Regular))
                     TextRenderer.DrawText(e.Graphics, SecondaryText, detailFont, detailBounds, UiTheme.Blend(UiTheme.Muted, Color.White, accentProgress), lineFlags);
             } else TextRenderer.DrawText(e.Graphics, Text, Font, textBounds, textColor, flags);
         }
