@@ -26,7 +26,6 @@ namespace SWToolsHub.Portable
         private readonly string root = AppDomain.CurrentDomain.BaseDirectory;
         private readonly TextBox search = new TextBox { Dock = DockStyle.Fill, BorderStyle = BorderStyle.None };
         private readonly ListBox list = new ListBox { Dock = DockStyle.Fill, DisplayMember = "name" };
-        private readonly Button run = new RoundedButton { Dock = DockStyle.Bottom, Height = 44, Text = "Выбрать процедуру и запустить…" };
         private readonly Label status = new Label { Dock = DockStyle.Bottom, Height = 90, AutoEllipsis = true };
         private Macro[] macros = new Macro[0];
         private bool busy;
@@ -84,14 +83,13 @@ namespace SWToolsHub.Portable
             shell.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
             foreach (var height in new[] { 64, 56, 30, 120 }) shell.RowStyles.Add(new RowStyle(SizeType.Absolute, height));
             shell.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-            header = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 3, RowCount = 1, Padding = new Padding(20, 12, 16, 12) };
+            header = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 1, Padding = new Padding(20, 12, 16, 12) };
             header.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-            for (int i = 0; i < 2; i++) header.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, Px(40)));
+            for (int i = 0; i < 1; i++) header.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, Px(40)));
             var brand = new Label { Text = "SW Tools Hub", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft, Font = titleFont };
             var choose = MakeButton("");
-            ConfigureIcon(run, "play", "Выбрать процедуру и запустить выбранный макрос");
             ConfigureIcon(choose, "folder", "Выбрать корневую папку библиотеки");
-            header.Controls.Add(brand, 0, 0); header.Controls.Add(run, 1, 0); header.Controls.Add(choose, 2, 0);
+            header.Controls.Add(brand, 0, 0); header.Controls.Add(choose, 1, 0);
             searchBox = new RoundedPanel { Dock = DockStyle.Fill, Padding = new Padding(12, 12, 12, 8), Margin = new Padding(20, 0, 20, 8), BackColor = Surface };
             search.BackColor = Surface; search.ForeColor = Foreground; search.AccessibleName = "Поиск макросов";
             searchBox.Controls.Add(search); tips.SetToolTip(search, "Поиск по выбранному разделу; на главной — по всей библиотеке");
@@ -107,7 +105,6 @@ namespace SWToolsHub.Portable
             content.BackColor = Surface; content.Padding = new Padding(0);
             libraryFrame.Controls.Add(content);
             shell.Controls.Add(moduleGrid, 0, 3); shell.Controls.Add(libraryFrame, 0, 4);
-            status.TextChanged += (s, e) => tips.SetToolTip(run, "Выбрать процедуру и запустить выбранный макрос\n" + status.Text);
             viewport.Controls.Add(shell); Controls.Add(viewport);
             viewport.SizeChanged += (s, e) => RefreshLayout();
             choose.Click += (s, e) => {
@@ -124,8 +121,6 @@ namespace SWToolsHub.Portable
             refresh.Tick += (s, e) => ReloadFolder();
             FormClosed += (s, e) => { refresh.Dispose(); tips.Dispose(); titleFont.Dispose(); };
             search.TextChanged += (s, e) => Filter();
-            list.SelectedIndexChanged += (s, e) => run.Enabled = !busy && list.SelectedItem != null;
-            run.Click += (s, e) => RunSelected(true);
             FormClosing += (s, e) => { if (busy) e.Cancel = true; };
             Shown += (s, e) => {
                 try {
@@ -144,7 +139,6 @@ namespace SWToolsHub.Portable
             var selectedId = (list.SelectedItem as Macro)?.id;
             list.DataSource = VisibleMacros();
             list.SelectedItem = selectedId == null ? null : macros.FirstOrDefault(m => m.id == selectedId);
-            run.Enabled = !busy && list.SelectedItem != null;
             RefreshLayout();
         }
         private Macro[] VisibleMacros()
@@ -235,7 +229,7 @@ namespace SWToolsHub.Portable
                 var heights = new[] { Px(64), Math.Max(Px(56), Font.Height + Px(28)), Math.Max(Px(30), Font.Height + Px(4)), Px(narrow ? 240 : 120) };
                 for (int i = 0; i < heights.Length; i++) shell.RowStyles[i].Height = heights[i];
                 header.Padding = Space(20, 12, 16, 12);
-                header.ColumnStyles[1].Width = header.ColumnStyles[2].Width = Px(40);
+                header.ColumnStyles[1].Width = Px(40);
                 foreach (var button in header.Controls.OfType<RoundedButton>()) { button.IconSize = Px(24); button.Margin = new Padding(Px(2)); }
                 searchBox.Padding = Space(12, 12, 12, 8); searchBox.Margin = Space(20, 0, 20, 8);
                 heading.Padding = Space(20, 0, 0, 0);
@@ -264,6 +258,12 @@ namespace SWToolsHub.Portable
                 RenderLibrary();
             } finally { updatingLayout = false; }
         }
+        private static string MacroCount(int value)
+        {
+            int last = value % 10, pair = value % 100;
+            string word = pair >= 11 && pair <= 14 ? "макросов" : last == 1 ? "макрос" : last >= 2 && last <= 4 ? "макроса" : "макросов";
+            return value + " " + word;
+        }
         private void RenderLibrary()
         {
             if (content.IsDisposed) return;
@@ -273,16 +273,19 @@ namespace SWToolsHub.Portable
             bool searching = !string.IsNullOrWhiteSpace(search.Text);
             moduleGrid.SuspendLayout();
             foreach (Control child in moduleGrid.Controls.Cast<Control>().ToArray()) child.Dispose();
-            var symbols = new[] { "part", "drawing", "assembly", "laser" };
-            for (int i = 0; i < MacroFolder.Modules.Length; i++) {
-                string module = MacroFolder.Modules[i];
+            var symbols = new[] { "star", "drawing", "assembly", "laser" };
+            var views = new[] { "Избранное", "Чертежи", "Сборки", "Лазер" };
+            for (int i = 0; i < views.Length; i++) {
+                string module = views[i];
+                bool favoritesView = i == 0;
                 var tile = MakeButton(module);
-                ((RoundedButton)tile).SecondaryText = macros.Count(m => m.category == module) + " макросов";
+                ((RoundedButton)tile).SecondaryText = MacroCount(macros.Count(m => favoritesView ? settings.Favorites.Contains(m.id, StringComparer.OrdinalIgnoreCase) : m.category == module));
+                ((RoundedButton)tile).AccentHover = true;
                 tile.Image = DrawIcon(symbols[i]); ((RoundedButton)tile).LeadingIcon = true; ((RoundedButton)tile).IconSize = Px(24);
                 tile.Disposed += (s, e) => tile.Image.Dispose();
                 tile.Dock = DockStyle.Fill; tile.Margin = new Padding(Px(4)); tile.AccessibleName = module;
-                if (section == module) tile.BackColor = UiTheme.Selected;
-                tile.Click += (s, e) => Navigate(section == module ? null : module);
+                if (favoritesView ? section == null : section == module) tile.BackColor = UiTheme.Selected;
+                tile.Click += (s, e) => { if (favoritesView) { search.Clear(); Navigate(null); } else Navigate(section == module ? null : module); };
                 moduleGrid.Controls.Add(tile, i % moduleGrid.ColumnCount, i / moduleGrid.ColumnCount);
             }
             moduleGrid.ResumeLayout();
@@ -332,7 +335,7 @@ namespace SWToolsHub.Portable
             if (busy) return;
             var selected = list.SelectedItem as Macro;
             if (selected == null) { ShowError("Выберите инструмент."); return; }
-            busy = true; run.Enabled = false; list.Enabled = false; content.Enabled = false; moduleGrid.Enabled = false;
+            busy = true; list.Enabled = false; content.Enabled = false; moduleGrid.Enabled = false;
             SldWorks sw = null; ModelDoc2 document = null;
             try
             {
@@ -377,7 +380,7 @@ namespace SWToolsHub.Portable
             finally
             {
                 Release(document); Release(sw);
-                busy = false; list.Enabled = true; content.Enabled = true; moduleGrid.Enabled = true; run.Enabled = list.SelectedItem != null;
+                busy = false; list.Enabled = true; content.Enabled = true; moduleGrid.Enabled = true;
             }
         }
         private static void Release(object value)

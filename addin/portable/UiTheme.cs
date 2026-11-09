@@ -120,7 +120,7 @@ namespace SWToolsHub.Portable
                 var lineFlags = TextFormatFlags.Left | TextFormatFlags.SingleLine | TextFormatFlags.EndEllipsis;
                 TextRenderer.DrawText(e.Graphics, Text, Font, titleBounds, textColor, lineFlags);
                 using (var detailFont = new Font(Font.FontFamily, Math.Max(8, Font.Size - 1), Font.Style))
-                    TextRenderer.DrawText(e.Graphics, SecondaryText, detailFont, detailBounds, UiTheme.Muted, lineFlags);
+                    TextRenderer.DrawText(e.Graphics, SecondaryText, detailFont, detailBounds, accentActive ? Color.White : UiTheme.Muted, lineFlags);
             } else TextRenderer.DrawText(e.Graphics, Text, Font, textBounds, textColor, flags);
         }
     }
