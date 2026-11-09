@@ -8,6 +8,7 @@ namespace SWToolsHub.Portable
     internal sealed class EntryDialog : Form
     {
         public string Entry { get; private set; }
+        private readonly Font fieldFont = UiTheme.CreateRegularFont();
         public EntryDialog(string name, Func<object> readMethods, string preferred)
         {
             BackColor = UiTheme.Background; ForeColor = UiTheme.Text;
@@ -20,8 +21,8 @@ namespace SWToolsHub.Portable
             layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
             foreach (var height in new[] { 88, 32, 42, 32, 42, 74, 54 }) layout.RowStyles.Add(new RowStyle(SizeType.Absolute, height));
             var info = new Label { Dock = DockStyle.Fill, AutoEllipsis = true };
-            var module = new ComboBox { Dock = DockStyle.Fill, DropDownStyle = ComboBoxStyle.DropDown };
-            var procedure = new ComboBox { Dock = DockStyle.Fill, DropDownStyle = ComboBoxStyle.DropDown };
+            var module = new EntryComboBox { Dock = DockStyle.Fill, AccessibleName = "Модуль", Font = fieldFont };
+            var procedure = new EntryComboBox { Dock = DockStyle.Fill, AccessibleName = "Инструмент / процедура", Font = fieldFont };
             var reload = new RoundedButton { Text = "Загрузить процедуры из SolidWorks", AutoSize = true };
             var buttons = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.RightToLeft };
             var confirm = new RoundedButton { Text = "Запустить", AutoSize = true };
@@ -61,6 +62,11 @@ namespace SWToolsHub.Portable
             foreach (var button in new[] { reload, confirm, cancel }) { button.FlatStyle = FlatStyle.Flat; button.FlatAppearance.BorderSize = 0; button.BackColor = UiTheme.Card; button.ForeColor = UiTheme.OnCard; }
             Controls.Add(layout); AcceptButton = confirm; CancelButton = cancel;
             Shown += (s, e) => load();
+        }
+        protected override void Dispose(bool disposing)
+        {
+            base.Dispose(disposing);
+            if (disposing) fieldFont.Dispose();
         }
     }
 }

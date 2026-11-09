@@ -4,6 +4,7 @@ using System.Drawing.Drawing2D;
 using System.Drawing.Text;
 using System.Drawing.Imaging;
 using System.IO;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
@@ -27,21 +28,30 @@ namespace SWToolsHub.Portable
         public static readonly Color AccentInk = Color.FromArgb(198, 83, 46);
         public static readonly Color AccentFill = Color.FromArgb(243, 178, 138);
         private static readonly PrivateFontCollection fonts = new PrivateFontCollection();
-        private static string fontPath;
+        private static readonly List<string> fontPaths = new List<string>();
         [DllImport("gdi32.dll", CharSet = CharSet.Unicode)] private static extern int AddFontResourceEx(string file, uint flags, IntPtr reserved);
         [DllImport("gdi32.dll", CharSet = CharSet.Unicode)] private static extern bool RemoveFontResourceEx(string file, uint flags, IntPtr reserved);
         public static void Initialize()
         {
-            fontPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Fonts", "SourceSans3-Bold.ttf");
-            if (File.Exists(fontPath)) { AddFontResourceEx(fontPath, 0x10, IntPtr.Zero); fonts.AddFontFile(fontPath); }
+            foreach (var file in new[] { "SourceSans3-Bold.ttf", "SourceSans3-Regular.ttf" }) {
+                var path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Fonts", file);
+                if (File.Exists(path)) { AddFontResourceEx(path, 0x10, IntPtr.Zero); fonts.AddFontFile(path); fontPaths.Add(path); }
+            }
         }
         public static Font CreateFont() => fonts.Families.Length > 0
             ? new Font(fonts.Families[0], 14f, FontStyle.Bold)
             : new Font("Segoe UI", 14f, FontStyle.Bold);
+        public static Font CreateRegularFont()
+        {
+            foreach (var family in fonts.Families)
+                if (family.IsStyleAvailable(FontStyle.Regular)) return new Font(family, 14f, FontStyle.Regular);
+            return new Font("Segoe UI", 14f, FontStyle.Regular);
+        }
         public static void Shutdown()
         {
             fonts.Dispose();
-            if (fontPath != null) RemoveFontResourceEx(fontPath, 0x10, IntPtr.Zero);
+            foreach (var path in fontPaths) RemoveFontResourceEx(path, 0x10, IntPtr.Zero);
+            fontPaths.Clear();
         }
         public static Color Blend(Color from, Color to, float amount)
         {

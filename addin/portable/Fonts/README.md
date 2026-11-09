@@ -1,8 +1,7 @@
-# Шрифт Portable
+# Шрифты Portable
 
-Source Sans 3 Bold от Adobe, без изменений.
-Источник: https://github.com/adobe-fonts/source-sans/blob/release/TTF/SourceSans3-Bold.ttf
-Лицензия: [SIL OFL 1.1](LICENSE.md). Файл лицензии поставляется вместе со шрифтом.
-Использование и встраивание в приложение разрешены согласно OFL.
-Размер интерфейса: 14 pt. Установка шрифта пользователем не требуется.
-Anthropic Sans не включён: лицензия на его распространение не подтверждена.
+Source Sans 3 Bold и Regular от Adobe, без изменений. Лицензия SIL OFL 1.1 — LICENSE.md.
+Источник: https://github.com/adobe-fonts/source-sans/tree/release/TTF
+Основной интерфейс: Bold 14 pt. Поля модуля/процедуры и их списки: Regular 14 pt.
+Оба TTF включены в ZIP и регистрируются только для процесса приложения.
+Установка шрифтов в Windows и права администратора не нужны.
