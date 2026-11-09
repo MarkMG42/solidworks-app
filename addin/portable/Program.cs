@@ -361,6 +361,7 @@ namespace SWToolsHub.Portable
                 };
                 var name = MakeButton(macro.name);
                 ((RoundedButton)name).Borderless = true;
+                ((RoundedButton)name).AccentHover = false; name.Cursor = Cursors.Default;
                 ((RoundedButton)name).SecondaryText = macro.category;
                 tips.SetToolTip(name, macro.name);
                 var shortcutField = CreateInlineHotkey(macro);
