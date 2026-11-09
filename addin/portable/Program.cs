@@ -157,7 +157,7 @@ namespace SWToolsHub.Portable
         {
             var image = new Bitmap(24, 24);
             using (var g = Graphics.FromImage(image))
-            using (var pen = new Pen(UiTheme.IconInk, 1.35f)) {
+            using (var pen = new Pen(kind == "folder" ? UiTheme.IconInk : UiTheme.AccentInk, 1.35f)) {
                 g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
                 pen.StartCap = pen.EndCap = System.Drawing.Drawing2D.LineCap.Round;
                 pen.LineJoin = System.Drawing.Drawing2D.LineJoin.Round;
@@ -187,7 +187,7 @@ namespace SWToolsHub.Portable
                         double radius = i % 2 == 0 ? 9 : 4;
                         return new PointF(12 + (float)(Math.Cos(angle) * radius), 12 + (float)(Math.Sin(angle) * radius));
                     }).ToArray();
-                    if (kind == "starFilled") using (var fill = new SolidBrush(Color.FromArgb(212, 201, 172))) g.FillPolygon(fill, points);
+                    if (kind == "starFilled") using (var fill = new SolidBrush(UiTheme.AccentFill)) g.FillPolygon(fill, points);
                     g.DrawPolygon(pen, points);
                 }
             }

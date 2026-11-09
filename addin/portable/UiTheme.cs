@@ -11,18 +11,20 @@ namespace SWToolsHub.Portable
     internal static class UiTheme
     {
         public static readonly Color Background = Color.FromArgb(253, 252, 248);
-        public static readonly Color Surface = Color.FromArgb(246, 245, 238);
+        public static readonly Color Surface = Color.FromArgb(248, 243, 232);
         public static readonly Color Text = Color.FromArgb(36, 35, 31);
         public static readonly Color Muted = Color.FromArgb(112, 109, 97);
-        public static readonly Color Card = Color.FromArgb(246, 245, 238);
-        public static readonly Color Selected = Color.FromArgb(236, 234, 224);
+        public static readonly Color Card = Color.FromArgb(248, 243, 232);
+        public static readonly Color Selected = Color.FromArgb(240, 231, 216);
         public static readonly Color Accent = Color.FromArgb(112, 109, 97);
         public static readonly Color OnCard = Color.FromArgb(36, 35, 31);
-        public static readonly Color Border = Color.FromArgb(222, 220, 209);
+        public static readonly Color Border = Color.FromArgb(227, 220, 207);
         public static readonly Color IconInk = Color.FromArgb(112, 109, 97);
-        public static readonly Color IconSurface = Color.FromArgb(236, 234, 224);
-        public static readonly Color IconBorder = Color.FromArgb(219, 216, 203);
-        public static readonly Color IconHover = Color.FromArgb(226, 223, 210);
+        public static readonly Color IconSurface = Color.FromArgb(242, 230, 215);
+        public static readonly Color IconBorder = Color.FromArgb(222, 199, 177);
+        public static readonly Color IconHover = Color.FromArgb(234, 215, 194);
+        public static readonly Color AccentInk = Color.FromArgb(169, 99, 71);
+        public static readonly Color AccentFill = Color.FromArgb(232, 189, 162);
         private static readonly PrivateFontCollection fonts = new PrivateFontCollection();
         private static string fontPath;
         [DllImport("gdi32.dll", CharSet = CharSet.Unicode)] private static extern int AddFontResourceEx(string file, uint flags, IntPtr reserved);
