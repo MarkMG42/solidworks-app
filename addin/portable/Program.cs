@@ -39,10 +39,10 @@ namespace SWToolsHub.Portable
         private readonly Label count = new Label { Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft };
         private Font titleFont;
         private string section;
-        private static readonly Color Background = Color.FromArgb(15, 16, 18);
-        private static readonly Color Surface = Color.FromArgb(24, 26, 29);
-        private static readonly Color Foreground = Color.FromArgb(235, 236, 238);
-        private static readonly Color Muted = Color.FromArgb(146, 151, 158);
+        private static readonly Color Background = UiTheme.Background;
+        private static readonly Color Surface = UiTheme.Surface;
+        private static readonly Color Foreground = UiTheme.Text;
+        private static readonly Color Muted = UiTheme.Muted;
         private readonly Timer refresh = new Timer { Interval = 2000 };
         private readonly string settingsPath = Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData), "SWToolsHub", "portable.json");
         private Settings settings = new Settings();
@@ -147,7 +147,7 @@ namespace SWToolsHub.Portable
         }
         private void ConfigureIcon(Button button, string icon, string description)
         {
-            StyleButton(button); button.Text = ""; button.Dock = DockStyle.Fill;
+            StyleButton(button); button.BackColor = Surface; button.ForeColor = Foreground; button.Text = ""; button.Dock = DockStyle.Fill;
             button.Margin = new Padding(2); button.Padding = new Padding(0);
             button.Image = DrawIcon(icon); button.ImageAlign = ContentAlignment.MiddleCenter;
             button.AccessibleName = description; tips.SetToolTip(button, description);
@@ -175,8 +175,8 @@ namespace SWToolsHub.Portable
         private static void StyleButton(Button button, bool primary = false)
         {
             button.FlatStyle = FlatStyle.Flat; button.FlatAppearance.BorderSize = 0;
-            button.BackColor = primary ? Color.FromArgb(221, 227, 234) : Surface;
-            button.ForeColor = primary ? Background : Foreground;
+            button.BackColor = primary ? UiTheme.Selected : UiTheme.Card;
+            button.ForeColor = UiTheme.OnCard;
             button.Cursor = Cursors.Hand; button.TextAlign = ContentAlignment.MiddleLeft;
             button.Padding = new Padding(10, 0, 6, 0);
         }
@@ -203,7 +203,7 @@ namespace SWToolsHub.Portable
                 string module = MacroFolder.Modules[i];
                 var tile = MakeButton(symbols[i] + "  " + module + "\n\n" + macros.Count(m => m.category == module) + " макросов");
                 tile.Dock = DockStyle.Fill; tile.Margin = new Padding(4); tile.AccessibleName = module;
-                if (section == module) tile.BackColor = Color.FromArgb(47, 51, 57);
+                if (section == module) tile.BackColor = UiTheme.Selected;
                 tile.Click += (s, e) => Navigate(section == module ? null : module);
                 moduleGrid.Controls.Add(tile, i, 0);
             }
@@ -228,7 +228,7 @@ namespace SWToolsHub.Portable
                 var name = MakeButton(macro.name);
                 if (home) ((RoundedButton)name).SecondaryText = macro.category;
                 name.Dock = DockStyle.Fill; name.AutoEllipsis = true;
-                if ((list.SelectedItem as Macro)?.id == macro.id) name.BackColor = Color.FromArgb(47, 51, 57);
+                if ((list.SelectedItem as Macro)?.id == macro.id) name.BackColor = UiTheme.Selected;
                 name.Click += (s, e) => { list.SelectedItem = macro; status.Text = "Выбран: " + macro.name; RenderLibrary(); };
                 var play = MakeButton("▷"); play.Dock = DockStyle.Fill; play.Padding = new Padding(0); play.TextAlign = ContentAlignment.MiddleCenter;
                 play.AccessibleName = "Выбрать процедуру и запустить: " + macro.name;
