@@ -336,7 +336,7 @@ namespace SWToolsHub.Portable
                 play.Click += (s, e) => { selectedMacro = macro; RunSelected(macro, true); };
                 row.Controls.Add(star, 0, 0); row.Controls.Add(name, 1, 0); row.Controls.Add(play, 2, 0); content.Controls.Add(row);
             }
-            if (visible.Length == 0) content.Controls.Add(new Label { Text = home ? "Нажмите ☆ рядом с макросом в разделе, чтобы добавить его в избранное." : "Макросов пока нет. Добавьте .swp в папку раздела или измените запрос поиска.", Margin = new Padding(0), Width = width, Height = Px(100), ForeColor = Muted });
+            if (visible.Length == 0) content.Controls.Add(new Label { Text = macros.Length == 0 ? "Библиотека макросов пуста" : home ? "Нажмите ☆ рядом с макросом в разделе, чтобы добавить его в избранное." : "Макросов пока нет. Добавьте .swp в папку раздела или измените запрос поиска.", Margin = new Padding(0), Width = width, Height = Px(100), ForeColor = Muted });
             if (home) {
                 if (macros.Any(m => m.category == "Без раздела")) {
                     var unsorted = MakeButton("Без раздела →"); unsorted.Width = width; unsorted.Margin = Space(0, 0, 0, 4); unsorted.Click += (s, e) => Navigate("Без раздела"); content.Controls.Add(unsorted);

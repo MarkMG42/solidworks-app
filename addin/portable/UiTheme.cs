@@ -1,5 +1,6 @@
 using System;
 using System.Drawing;
+using System.Diagnostics;
 using System.Drawing.Drawing2D;
 using System.Drawing.Text;
 using System.Drawing.Imaging;
@@ -91,27 +92,35 @@ namespace SWToolsHub.Portable
         public bool LeadingIcon { get; set; }
         public bool Borderless { get; set; }
         private bool hovered;
-        private bool hoverReady;
         private bool stopping;
         private float hoverProgress;
+        private float animationStart, animationTarget;
+        private readonly Stopwatch animationClock = new Stopwatch();
+        private void AnimateTo(float target)
+        {
+            animationStart = hoverProgress; animationTarget = target;
+            animationClock.Restart(); hoverAnimation.Start();
+        }
         private readonly Timer hoverDelay = new Timer { Interval = 60 };
         private readonly Timer hoverAnimation = new Timer { Interval = 10 };
         public RoundedButton()
         {
             DoubleBuffered = true; ResizeRedraw = true;
-            hoverDelay.Tick += (s, e) => { hoverDelay.Stop(); if (hovered && Enabled) { hoverReady = true; hoverAnimation.Start(); } };
+            SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.UserPaint, true);
+            hoverDelay.Tick += (s, e) => { hoverDelay.Stop(); if (hovered && Enabled) { AnimateTo(1); } };
             hoverAnimation.Tick += (s, e) => {
-                float target = hovered && hoverReady && Enabled ? 1 : 0;
-                hoverProgress = target > hoverProgress ? Math.Min(target, hoverProgress + .1f) : Math.Max(target, hoverProgress - .1f);
-                Invalidate(); if (Math.Abs(hoverProgress - target) < .001f) hoverAnimation.Stop();
+                float t = Math.Min(1f, (float)animationClock.Elapsed.TotalMilliseconds / 140f);
+                float eased = t * t * (3 - 2 * t);
+                hoverProgress = animationStart + (animationTarget - animationStart) * eased;
+                Invalidate(); if (t >= 1) { hoverAnimation.Stop(); animationClock.Stop(); }
             };
         }
         protected override void OnMouseEnter(EventArgs e) { if (!stopping) { hovered = true; hoverDelay.Stop(); hoverDelay.Start(); } base.OnMouseEnter(e); }
-        protected override void OnMouseLeave(EventArgs e) { if (!stopping) { hovered = false; hoverReady = false; hoverDelay.Stop(); hoverAnimation.Start(); } base.OnMouseLeave(e); }
+        protected override void OnMouseLeave(EventArgs e) { if (!stopping) { hovered = false; hoverDelay.Stop(); AnimateTo(0); } base.OnMouseLeave(e); }
         protected override void OnEnabledChanged(EventArgs e)
         {
             base.OnEnabledChanged(e);
-            if (!Enabled && !stopping) { hoverDelay.Stop(); hoverAnimation.Stop(); hovered = hoverReady = false; hoverProgress = 0; Invalidate(); }
+            if (!Enabled && !stopping) { hoverDelay.Stop(); hoverAnimation.Stop(); hovered = false; hoverProgress = 0; Invalidate(); }
         }
         protected override void Dispose(bool disposing)
         {
@@ -125,32 +134,33 @@ namespace SWToolsHub.Portable
             bool card = BackColor.ToArgb() == UiTheme.Card.ToArgb() || BackColor.ToArgb() == UiTheme.Selected.ToArgb();
             float progress = Enabled ? hoverProgress : 0;
             float accentProgress = AccentHover ? progress : 0;
-            bool accentActive = accentProgress > 0 && !IconOnly;
+            bool accentActive = accentProgress > 0;
             var hoverColor = AccentHover ? UiTheme.AccentInk : IconOnly ? UiTheme.IconHover : card ? UiTheme.Selected : UiTheme.Background;
             float available = Math.Max(1, Math.Min(Width, Height) - 2);
-            float diameter = Math.Min(available, Math.Max(1, Math.Min(Width, Height) * (36f / 46f) - 2) * (1 + .2f * accentProgress));
+            float diameter = Math.Min(available, Math.Max(1, Math.Min(Width, Height) * (36f / 46f) - 2));
             var shapeBounds = IconOnly ? new RectangleF((Width - diameter) / 2, (Height - diameter) / 2, diameter, diameter) : new RectangleF(1, 1, Width - 2, Height - 2);
-            using (var path = UiTheme.Shape(shapeBounds, IconOnly ? diameter / 2 : 16))
+            using (var path = UiTheme.Shape(shapeBounds, IconOnly ? 8 : 16))
             using (var fill = new SolidBrush(UiTheme.Blend(BackColor, hoverColor, progress)))
             using (var pen = new Pen(UiTheme.Blend(UiTheme.Border, UiTheme.AccentInk, accentProgress), 1)) {
-                if (!IconOnly) { e.Graphics.FillPath(fill, path); if (!Borderless) e.Graphics.DrawPath(pen, path); }
+                if (!IconOnly || accentActive) e.Graphics.FillPath(fill, path);
+                if (!IconOnly && !Borderless) e.Graphics.DrawPath(pen, path);
             }
             int iconSpace = (int)Math.Round(IconSize) + 8;
             if (Image != null) {
-                int normalSize = Math.Max(1, Math.Min((int)Math.Round(IconSize), Math.Min(Width, Height) - 8));
-                int size = AccentHover && progress > 0 ? Math.Min(Math.Min(Width, Height) - 6, (int)Math.Round(normalSize * (1 + .2f * accentProgress))) : normalSize;
-                int x = LeadingIcon ? Padding.Left : (Width - size) / 2;
-                int y = LeadingIcon ? Math.Max(8, (Height - Font.Height * (string.IsNullOrEmpty(SecondaryText) ? 3 : 2) - 2) / 2) : (Height - size) / 2;
-                var target = new Rectangle(x, y, size, size);
+                float normalSize = Math.Max(1, Math.Min(IconSize, Math.Min(Width, Height) - 8));
+                float size = Math.Min(Math.Min(Width, Height) - 6, normalSize * (1 + .2f * accentProgress));
+                float x = LeadingIcon ? Padding.Left : (Width - size) / 2f;
+                float y = LeadingIcon ? Math.Max(8, (Height - Font.Height * (string.IsNullOrEmpty(SecondaryText) ? 3 : 2) - 2) / 2f) : (Height - size) / 2f;
+                var target = new RectangleF(x, y, size, size);
                 e.Graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
                 if (accentActive) {
                     using (var attributes = new ImageAttributes()) {
                         var tint = new ColorMatrix { Matrix00 = 1 - accentProgress, Matrix11 = 1 - accentProgress, Matrix22 = 1 - accentProgress, Matrix40 = accentProgress, Matrix41 = accentProgress, Matrix42 = accentProgress };
                         attributes.SetColorMatrix(tint);
-                        e.Graphics.DrawImage(Image, target, 0, 0, Image.Width, Image.Height, GraphicsUnit.Pixel, attributes);
+                        e.Graphics.DrawImage(Image, new[] { new PointF(x, y), new PointF(x + size, y), new PointF(x, y + size) }, new RectangleF(0, 0, Image.Width, Image.Height), GraphicsUnit.Pixel, attributes);
                     }
                 } else if (Enabled) e.Graphics.DrawImage(Image, target);
-                else using (var scaled = new Bitmap(Image, new Size(size, size))) ControlPaint.DrawImageDisabled(e.Graphics, scaled, x, y, BackColor);
+                else using (var scaled = new Bitmap(Image, new Size((int)Math.Ceiling(size), (int)Math.Ceiling(size)))) ControlPaint.DrawImageDisabled(e.Graphics, scaled, (int)x, (int)y, BackColor);
             }
             var textBounds = new Rectangle(Padding.Left, Padding.Top, Math.Max(1, Width - Padding.Horizontal), Math.Max(1, Height - Padding.Vertical));
             if (LeadingIcon) { textBounds.X += iconSpace; textBounds.Width = Math.Max(1, textBounds.Width - iconSpace); }

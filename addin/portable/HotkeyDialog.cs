@@ -67,7 +67,7 @@ namespace SWToolsHub.Portable
             var rows = new TableLayoutPanel { AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, Dock = DockStyle.Top, ColumnCount = 2, Margin = new Padding(0), Padding = new Padding(0) };
             rows.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 55)); rows.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 45));
             var byPath = macros.ToDictionary(m => m.id, StringComparer.OrdinalIgnoreCase);
-            var paths = macros.Select(m => m.id).Concat(bindings.Keys).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+            var paths = macros.Select(m => m.id).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
             ClientSize = new Size(640, 314 + Math.Max(1, Math.Min(paths.Length, 4)) * 54);
             int index = 0;
             foreach (string path in paths) {
@@ -112,7 +112,7 @@ namespace SWToolsHub.Portable
                 keyLayout.Paint += (sender, e) => { using (var pen = new Pen(UiTheme.Border)) e.Graphics.DrawLine(pen, 0, keyLayout.Height - 1, keyLayout.Width, keyLayout.Height - 1); };
                 var tip = new ToolTip(); tip.SetToolTip(title, name + "\n" + (found ? macro.category : "Нет в текущей библиотеке") + "\n" + path); title.Disposed += (s, e) => tip.Dispose();
             }
-            if (paths.Length == 0) { rows.RowStyles.Add(new RowStyle(SizeType.Absolute, 90)); rows.Controls.Add(new Label { Text = "В библиотеке пока нет макросов. Выберите папку и добавьте .swp.", AutoSize = true, Padding = new Padding(12) }, 0, 0); }
+            if (paths.Length == 0) { rows.RowStyles.Add(new RowStyle(SizeType.Absolute, 90)); rows.Controls.Add(new Label { Text = "Библиотека макросов пуста", AutoSize = true, Padding = new Padding(12) }, 0, 0); }
             viewport.Controls.Add(rows);
             Action fit = () => { int width = Math.Max(1, viewport.ClientSize.Width - SystemInformation.VerticalScrollBarWidth);
                 rows.MinimumSize = new Size(width, 0); rows.MaximumSize = new Size(width, 0); rows.Width = width; };
@@ -144,8 +144,8 @@ namespace SWToolsHub.Portable
             string error = Hotkey.Validate(draft);
             if (duplicate != null) {
                 var paths = duplicate.Select(p => p.Key).ToArray();
-                foreach (var path in paths) { fields[path].BackColor = Color.FromArgb(255, 240, 232); fields[path].Parent.BackColor = fields[path].BackColor; fields[path].Parent.Invalidate(); }
-                error = Hotkey.Format(duplicate.Key) + " уже назначено: " + names[paths[0]] + ". Выберите другое сочетание. Сохранение заблокировано.";
+                foreach (var path in paths.Where(fields.ContainsKey)) { fields[path].BackColor = Color.FromArgb(255, 240, 232); fields[path].Parent.BackColor = fields[path].BackColor; fields[path].Parent.Invalidate(); }
+                error = Hotkey.Format(duplicate.Key) + " уже назначено: " + (names.ContainsKey(paths[0]) ? names[paths[0]] : System.IO.Path.GetFileNameWithoutExtension(paths[0])) + ". Выберите другое сочетание. Сохранение заблокировано.";
             }
             notice.BackColor = error == null ? UiTheme.Background : Color.FromArgb(255, 240, 232);
             notice.ForeColor = error == null ? UiTheme.Muted : UiTheme.AccentInk;
