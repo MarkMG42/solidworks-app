@@ -9,7 +9,6 @@ files = {
     'SWToolsHub.exe': bin_dir / 'SWToolsHub.exe',
     'SWToolsHub.exe.config': bin_dir / 'SWToolsHub.exe.config',
     'SolidWorks.Interop.sldworks.dll': bin_dir / 'SolidWorks.Interop.sldworks.dll',
-    'Library/macros.json': root / 'config/macros.demo.json',
     'ИНСТРУКЦИЯ.txt': root / 'addin/portable/ИНСТРУКЦИЯ.txt',
 }
 for path in files.values():
