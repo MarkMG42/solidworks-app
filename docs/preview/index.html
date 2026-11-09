@@ -1,50 +1,59 @@
 <!doctype html><html lang="ru"><meta charset="utf-8"><title>SW Tools Hub — предварительный просмотр</title><style>
 @font-face{font-family:'Source Sans 3';src:url('../../addin/portable/Fonts/SourceSans3-Bold.ttf') format('truetype');font-weight:700;font-style:normal;font-display:block}
-
-*{box-sizing:border-box}body{margin:0;background:#EDE4DF;font:28.0005px 'Source Sans 3','Segoe UI',Arial,sans-serif;font-weight:700;color:#24231F;display:flex;justify-content:center;padding:30px}.window{width:1352px;height:933px;background:#FDFCF8;border:1.5px solid #DDC8BF;border-radius:12px;overflow:hidden;box-shadow:0 24px 75px #0005}.titlebar{font-family:'Segoe UI',Arial,sans-serif;font-weight:400;height:31px;background:#F5EDE8;color:#18191c;display:flex;align-items:center;justify-content:space-between;padding:0 12px;font-size:12px}.titlebar span:last-child{letter-spacing:25.5px}.app{height:900px;display:flex;flex-direction:column}.header{height:96px;padding:18px 27px 18px 30px;display:flex;align-items:center;justify-content:space-between}strong{font-size:28.0005px;font-weight:700}.toolbar{display:flex;gap:6px}button{border-radius:15px;border:1.5px solid #E3DCCF;font:inherit;cursor:pointer;color:inherit;background:#F8F3E8}.toolbar button{width:54px;height:54px;display:grid;place-items:center}.toolbar button:hover,.tile:hover{background:#FCF7F0}svg{width:33px;height:33px;fill:none;stroke:currentColor;stroke-width:1.35;stroke-linejoin:round;stroke-linecap:round}.toolbar .disabled{opacity:.35}.search{height:72px;margin:0 30px 12px;padding:15px 18px;background:#F8F3E8;border:1.5px solid #E3DCCF;border-radius:18px;display:flex;align-items:center;gap:12px}.search svg{width:22.5px;height:22.5px;color:#24231F}.search input{color:#24231F;background:transparent;border:0;outline:none;width:100%;font:inherit}.hint{height:45px;margin:0 30px;color:#24231F;font-size:27px}.modules{height:168px;margin:6px 30px 12px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.tile{text-align:left;padding:18px 21px;display:flex;flex-direction:column;justify-content:center;gap:27px}.tile .caption{display:flex;gap:13.5px;align-items:center}.tile svg{width:24px;height:24px}.tile small{font-size:27px;color:#24231F}.tile.active{background:#FCF7F0}.content{flex:1;min-height:0;margin:15px 30px 30px;padding:30px 21px;background:#F8F3E8;border:1.5px solid #E3DCCF;border-radius:18px;overflow:auto}h2{font-size:28.0005px;margin:0 0 30px;font-weight:700}.empty{line-height:1.7;color:#24231F;margin:0;font-size:27px}.status{display:none;height:66px;color:#24231F;font-size:27px;padding:6px 30px}.footer{display:none;height:51px;padding:12px 30px;color:#24231F;font-size:27px}.tag{font-size:15px;color:#24231F;margin-top:22.5px}
-.macro-row{display:grid;grid-template-columns:54px minmax(0,1fr) 54px;align-items:stretch;gap:6px;margin:0 0 12px;min-height:120px}.macro-row button{padding:9px;background:#F8F3E8;border-color:#E3DCCF}.macro-name{text-align:left;min-width:0}.macro-name span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.macro-name small{display:block;margin-top:7.5px;color:#24231F;font:inherit;font-size:25.9995px}.macro-name.selected{background:#FCF7F0}.row-play svg{width:25.5px;height:25.5px}.row-star{font-size:30px}
-.header,.search,.hint,.modules{flex-shrink:0}
-.tile,.macro-row button{background:#F8F3E8;color:#24231F;border-color:#E3DCCF}
-.tile small,.macro-name small{color:#24231F}
-.tile:hover,.tile.active,.macro-row button:hover,.macro-name.selected{background:#FCF7F0;border-color:#E3DCCF}
-.toolbar button{background:#F8F3E8;color:#24231F;border-color:#E3DCCF}
-.toolbar button:hover{background:#FCF7F0;border-color:#E3DCCF}
-button:focus-visible{outline:3px solid #E3DCCF;outline-offset:3px}
-.search:focus-within{border-color:#E3DCCF}
-.search input::placeholder{color:#24231F;opacity:1}
-
-.toolbar button,.macro-row .row-star,.macro-row .row-play{background:#FCF7F0;color:#706D61;border:1.5px solid #DEC7B1;border-radius:24px}
-.toolbar button:hover,.macro-row .row-star:hover,.macro-row .row-play:hover{background:#F6E8DA;border-color:#C6C2B5}
-.row-star,.row-play{align-self:center;justify-self:center;width:54px;height:54px;display:grid;place-items:center}
-.row-star svg,.row-play svg{width:33px;height:33px}
-.tile svg,.search svg{color:#706D61;stroke-width:1.35}
-
-.window{background:#FDFCF8;border-color:#E3DCCF}
-.tile,.content,.search,.macro-row button{border-color:#E3DCCF;background:#F8F3E8}
-.tile,.content,.search{border-radius:24px}
-.tile small,.macro-name small,.hint,.empty,.search input::placeholder{color:#706D61}
-.tile:hover,.tile.active,.macro-name.selected{background:#FCF7F0;border-color:#C6C2B5}
-.tile{gap:12px}.tile small{padding-left:37.5px}
-.macro-row{border-bottom:1.5px solid #E3DCCF;padding-bottom:12px;margin-bottom:12px}
-.macro-row .macro-name{border-color:transparent;background:transparent;border-radius:18px}
-.macro-row .macro-name:hover,.macro-row .macro-name.selected{background:#FCF7F0}
-.toolbar button,.macro-row .row-star,.macro-row .row-play{background:#FCF7F0;color:#706D61;border-color:#DEC7B1}
-.toolbar button:hover,.macro-row .row-star:hover,.macro-row .row-play:hover{background:#F6E8DA;border-color:#C6C2B5}
-button:focus-visible{outline:3px solid #706D61}
-.search:focus-within{border-color:#706D61}
-
-.tile svg,.macro-row .row-star,.macro-row .row-play{color:#C6532E}
-.tile:hover,.tile.active,.macro-name.selected,.macro-row .macro-name:hover,.macro-row .macro-name.selected{background:#F0E7D8}
-
+*{box-sizing:border-box}
+body{margin:0;padding:20px;background:#EDE4DF;display:flex;justify-content:center;color:#24231F;font:700 18.667px 'Source Sans 3','Segoe UI',Arial,sans-serif}
+.window{width:902px;height:633px;min-width:420px;min-height:240px;max-width:calc(100vw - 40px);display:flex;flex-direction:column;overflow:hidden;resize:both;background:#FDFCF8;border:1px solid #E3DCCF;border-radius:8px;box-shadow:0 16px 50px #0005}
+.titlebar{height:31px;flex-shrink:0;padding:0 12px;display:flex;align-items:center;justify-content:space-between;background:#F5EDE8;color:#18191c;font:400 12px 'Segoe UI',Arial,sans-serif}
+.titlebar span:last-child{letter-spacing:17px}
+.app{--s:1;flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;scrollbar-gutter:stable;container-type:inline-size}
+.page{min-height:100%;display:flex;flex-direction:column}
+.header{height:calc(64px * var(--s));min-height:52px;padding:calc(12px * var(--s)) calc(18px * var(--s)) calc(12px * var(--s)) calc(20px * var(--s));display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+strong,h2{font-size:18.667px;font-weight:700}
+.toolbar{display:flex;gap:calc(4px * var(--s))}
+button,input{font:inherit}
+button{cursor:pointer;color:inherit;background:#F8F3E8;border:1px solid #E3DCCF;border-radius:16px}
+svg{width:calc(24px * var(--s));height:calc(24px * var(--s));fill:none;stroke:currentColor;stroke-width:1.35;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+.toolbar button,.row-star,.row-play{width:calc(36px * var(--s));height:calc(36px * var(--s));padding:0;display:grid;place-items:center;background:#FCF7F0;border:1px solid #DEC7B1;border-radius:50%;flex-shrink:0}
+.toolbar button{color:#706D61}
+.toolbar button:hover,.row-star:hover,.row-play:hover{background:#F6E8DA}
+.toolbar .disabled{opacity:.35}
+.search{height:max(42px,calc(48px * var(--s)));margin:0 calc(20px * var(--s)) calc(8px * var(--s));padding:calc(8px * var(--s)) calc(12px * var(--s));display:flex;align-items:center;gap:calc(8px * var(--s));background:#F8F3E8;border:1px solid #E3DCCF;border-radius:16px;flex-shrink:0}
+.search svg{width:calc(18px * var(--s));height:calc(18px * var(--s));color:#706D61}
+.search input{width:100%;min-width:0;padding:0;border:0;outline:0;background:transparent;color:#24231F}
+.search input::placeholder{color:#706D61;opacity:1}
+.hint{height:max(26px,calc(30px * var(--s)));margin:0 calc(20px * var(--s));color:#706D61;font-size:18px;flex-shrink:0}
+.modules{height:calc(112px * var(--s));margin:calc(4px * var(--s)) calc(20px * var(--s)) calc(8px * var(--s));display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:calc(8px * var(--s));flex-shrink:0}
+.tile{text-align:left;min-width:0;padding:calc(12px * var(--s)) calc(14px * var(--s));display:flex;flex-direction:column;justify-content:center;gap:calc(8px * var(--s));background:#F8F3E8}
+.tile .caption{display:flex;gap:calc(8px * var(--s));align-items:center}
+.tile svg{color:#C6532E}
+.tile small{font-size:17.333px;color:#706D61;padding-left:calc(32px * var(--s))}
+.tile:hover,.tile.active{background:#F0E7D8;border-color:#C6C2B5}
+.content{flex:1;min-height:calc(240px * var(--s));margin:calc(10px * var(--s)) calc(20px * var(--s)) calc(20px * var(--s));padding:calc(16px * var(--s)) calc(14px * var(--s));overflow:visible;background:#F8F3E8;border:1px solid #E3DCCF;border-radius:16px}
+h2{margin:0 0 calc(16px * var(--s))}
+.empty{margin:0;color:#706D61;font-size:17.333px;line-height:1.6}
+.macro-row{display:grid;grid-template-columns:calc(40px * var(--s)) minmax(0,1fr) calc(40px * var(--s));min-height:calc(80px * var(--s));align-items:stretch;gap:calc(4px * var(--s));margin-bottom:calc(8px * var(--s));padding-bottom:calc(8px * var(--s));border-bottom:1px solid #E3DCCF}
+.macro-row button{min-width:0}
+.macro-name{padding:calc(6px * var(--s));text-align:left;background:transparent;border-color:transparent;border-radius:12px}
+.macro-name span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.macro-name small{display:block;margin-top:calc(5px * var(--s));color:#706D61;font-size:17.333px}
+.macro-name:hover,.macro-name.selected{background:#F0E7D8}
+.row-star,.row-play{align-self:center;justify-self:center;color:#C6532E}
 .row-play,.toolbar button{transition:background-color .14s ease,color .14s ease,border-color .14s ease}
 .row-play svg,.toolbar button svg{transition:transform .14s ease}
-.macro-row .row-play:hover,.toolbar button.play-active:hover{background:#C6532E;color:#FFFFFF;border-color:#C6532E}
-.macro-row .row-play:hover svg,.toolbar button.play-active:hover svg{transform:scale(1.2)}
-</style><body><div class="window"><div class="titlebar"><span>▦ &nbsp; SW Tools Hub</span><span>− □ ×</span></div><main class="app"><header class="header"><strong>SW Tools Hub</strong><div class="toolbar"><button class="disabled" title="Выберите макрос для запуска"><svg viewBox="0 0 24 24"><path d="m8 4 12 8-12 8Z"/></svg></button><button title="Выбрать папку библиотеки" onclick="document.getElementById('status').textContent='В приложении откроется системный выбор папки Windows.'"><svg viewBox="0 0 24 24"><path d="M3 6h7l2 3h9v10H3Z"/></svg></button></div></header><div class="search"><svg viewBox="0 0 24 24"><circle cx="10" cy="10" r="6"/><path d="m15 15 5 5"/></svg><input aria-label="Поиск макросов" oninput="render()" placeholder="Найти макрос…"></div><div class="hint">Поиск макросов</div><section class="modules"><button class="tile" onclick="show('Детали',this)"><span class="caption"><svg viewBox="0 0 24 24"><path d="m12 3 9 5v10l-9 5-9-5V8Zm0 10 9-5M3 8l9 5v10"/></svg>Детали</span><small>0 макросов</small></button><button class="tile" onclick="show('Чертежи',this)"><span class="caption"><svg viewBox="0 0 24 24"><path d="M5 3h10l4 4v14H5Zm10 0v5h4M8 12h8M8 16h5"/></svg>Чертежи</span><small>0 макросов</small></button><button class="tile" onclick="show('Сборки',this)"><span class="caption"><svg viewBox="0 0 24 24"><path d="m12 2 5 3v6l-5 3-5-3V5Zm-5 9-5 3v6l5 3 5-3v-6Zm10 0-5 3v6l5 3 5-3v-6Z"/></svg>Сборки</span><small>0 макросов</small></button><button class="tile" onclick="show('Лазер',this)"><span class="caption"><svg viewBox="0 0 24 24"><path d="M7 3h10v5l-5 4-5-4Zm5 9v7M3 21h18M6 13l-3 3m15-3 3 3"/></svg>Лазер</span><small>0 макросов</small></button></section><section class="content"><h2 id="heading">Избранные инструменты</h2><div id="rows"></div><p class="empty" id="empty">Нажмите ☆ рядом с макросом в разделе,<br>чтобы добавить его в избранное.</p></section><div class="status" id="status">Добавьте .swp в папки разделов библиотеки.</div><footer class="footer">0 инструментов · Portable</footer></main></div><script>
+.row-play:hover,.toolbar button.play-active:hover{background:#C6532E;color:#FFF;border-color:#C6532E}
+.row-play:hover svg,.toolbar button.play-active:hover svg{transform:scale(1.2)}
+button:focus-visible{outline:2px solid #706D61;outline-offset:2px}
+.search:focus-within{border-color:#706D61}
+.status,.footer{display:none}
+@container (max-width:719px){.modules{grid-template-columns:repeat(2,minmax(0,1fr));height:calc(224px * var(--s))}}
+.app::-webkit-scrollbar{width:12px}.app::-webkit-scrollbar-track{background:#F6F2EA}.app::-webkit-scrollbar-thumb{background:#C5BCAF;border:3px solid #F6F2EA;border-radius:8px}.app::-webkit-scrollbar-thumb:hover{background:#AFA18E}
+</style><body><div class="window"><div class="titlebar"><span>▦ &nbsp; SW Tools Hub</span><span>− □ ×</span></div><main class="app"><div class="page"><header class="header"><strong>SW Tools Hub</strong><div class="toolbar"><button class="disabled" title="Выберите макрос для запуска"><svg viewBox="0 0 24 24"><path d="m8 4 12 8-12 8Z"/></svg></button><button title="Выбрать папку библиотеки" onclick="document.getElementById('status').textContent='В приложении откроется системный выбор папки Windows.'"><svg viewBox="0 0 24 24"><path d="M3 6h7l2 3h9v10H3Z"/></svg></button></div></header><div class="search"><svg viewBox="0 0 24 24"><circle cx="10" cy="10" r="6"/><path d="m15 15 5 5"/></svg><input aria-label="Поиск макросов" oninput="render()" placeholder="Найти макрос…"></div><div class="hint">Поиск макросов</div><section class="modules"><button class="tile" onclick="show('Детали',this)"><span class="caption"><svg viewBox="0 0 24 24"><path d="m12 3 9 5v10l-9 5-9-5V8Zm0 10 9-5M3 8l9 5v10"/></svg>Детали</span><small>0 макросов</small></button><button class="tile" onclick="show('Чертежи',this)"><span class="caption"><svg viewBox="0 0 24 24"><path d="M5 3h10l4 4v14H5Zm10 0v5h4M8 12h8M8 16h5"/></svg>Чертежи</span><small>0 макросов</small></button><button class="tile" onclick="show('Сборки',this)"><span class="caption"><svg viewBox="0 0 24 24"><path d="m12 2 5 3v6l-5 3-5-3V5Zm-5 9-5 3v6l5 3 5-3v-6Zm10 0-5 3v6l5 3 5-3v-6Z"/></svg>Сборки</span><small>0 макросов</small></button><button class="tile" onclick="show('Лазер',this)"><span class="caption"><svg viewBox="0 0 24 24"><path d="M7 3h10v5l-5 4-5-4Zm5 9v7M3 21h18M6 13l-3 3m15-3 3 3"/></svg>Лазер</span><small>0 макросов</small></button></section><section class="content"><h2 id="heading">Избранные инструменты</h2><div id="rows"></div><p class="empty" id="empty">Нажмите ☆ рядом с макросом в разделе,<br>чтобы добавить его в избранное.</p></section><div class="status" id="status">Добавьте .swp в папки разделов библиотеки.</div><footer class="footer">0 инструментов · Portable</footer></div></main></div><script>
 // Данные только для предварительного просмотра: рабочие .swp не добавляются.
 const macros=[{name:'Авторазмер Рамы',category:'Чертежи',favorite:true},{name:'Экспорт DXF',category:'Лазер',favorite:true}];
 let section=null, selected=null;
 function show(title,button){section=section===title?null:title;render()}
 function render(){const query=document.querySelector('input').value.trim().toLowerCase();const home=!section&&!query;document.getElementById('heading').textContent=home?'Избранные инструменты':query?'Результаты поиска':section;document.querySelectorAll('.tile').forEach((tile,i)=>{const category=['Детали','Чертежи','Сборки','Лазер'][i];tile.classList.toggle('active',section===category);tile.querySelector('small').textContent=macros.filter(m=>m.category===category).length+' макросов'});const visible=macros.filter(m=>(!section||m.category===section)&&(!home||m.favorite)&&m.name.toLowerCase().includes(query));const rows=document.getElementById('rows');rows.replaceChildren();visible.forEach(m=>{const row=document.createElement('div');row.className='macro-row';const star=document.createElement('button');star.className='row-star';star.innerHTML='<svg viewBox="0 0 24 24" style="fill:'+(m.favorite?'#F3B28A':'none')+'"><path d="m12 3 2.7 5.5 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9Z"/></svg>';star.title=(m.favorite?'Убрать из избранного: ':'В избранное: ')+m.name;star.onclick=()=>{m.favorite=!m.favorite;render()};const name=document.createElement('button');name.className='macro-name'+(selected===m?' selected':'');const title=document.createElement('span');title.textContent=m.name;name.append(title);if(home){const subtitle=document.createElement('small');subtitle.textContent=m.category;name.append(subtitle)}name.onclick=()=>{selected=m;render()};const play=document.createElement('button');play.className='row-play';play.title='Запустить: '+m.name;play.innerHTML='<svg viewBox="0 0 24 24"><path d="m8 4 12 8-12 8Z"/></svg>';play.onclick=()=>{selected=m;render()};row.append(star,name,play);rows.append(row)});document.getElementById('empty').style.display=visible.length?'none':'block';document.getElementById('empty').textContent=home?'Нажмите ☆ рядом с макросом в разделе, чтобы добавить его в избранное.':'Макросов пока нет. Измените запрос или раздел.';const play=document.querySelector('.toolbar button');play.classList.toggle('disabled',!visible.includes(selected));play.classList.toggle('play-active',visible.includes(selected));play.title=visible.includes(selected)?'Выбрать процедуру и запустить: '+selected.name:'Выберите макрос для запуска'}
 render();
+const app=document.querySelector('.app');
+new ResizeObserver(()=>app.style.setProperty('--s',Math.max(.8,Math.min(1.5,app.clientWidth/900)))).observe(app);
 </script></body></html>
