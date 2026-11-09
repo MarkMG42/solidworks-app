@@ -10,6 +10,8 @@ namespace SWToolsHub.Portable
         public string Entry { get; private set; }
         public EntryDialog(string name, Func<object> readMethods, string preferred)
         {
+            BackColor = Color.FromArgb(15, 16, 18); ForeColor = Color.FromArgb(235, 236, 238);
+            Font = new Font("Segoe UI", 9.5f);
             Text = "Модуль и процедура: " + name;
             StartPosition = FormStartPosition.CenterParent;
             AutoScaleMode = AutoScaleMode.Dpi;
@@ -55,6 +57,8 @@ namespace SWToolsHub.Portable
             layout.Controls.Add(info, 0, 0); layout.Controls.Add(new Label { Text = "Модуль", Dock = DockStyle.Fill }, 0, 1);
             layout.Controls.Add(module, 0, 2); layout.Controls.Add(new Label { Text = "Процедура", Dock = DockStyle.Fill }, 0, 3);
             layout.Controls.Add(procedure, 0, 4); layout.Controls.Add(reload, 0, 5); layout.Controls.Add(buttons, 0, 6);
+            foreach (var field in new[] { module, procedure }) { field.BackColor = Color.FromArgb(24, 26, 29); field.ForeColor = ForeColor; field.FlatStyle = FlatStyle.Flat; }
+            foreach (var button in new[] { reload, confirm, cancel }) { button.FlatStyle = FlatStyle.Flat; button.FlatAppearance.BorderSize = 0; button.BackColor = Color.FromArgb(40, 43, 48); button.ForeColor = ForeColor; }
             Controls.Add(layout); AcceptButton = confirm; CancelButton = cancel;
             Shown += (s, e) => load();
         }

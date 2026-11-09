@@ -2,7 +2,7 @@ using System;
 using System.IO;
 using System.Linq;
 using SWToolsHub.Portable;
-namespace SWToolsHub { public class Macro { public string id, file, name, module, procedure, requiredDocument; } }
+namespace SWToolsHub { public class Macro { public string id, file, name, module, procedure, requiredDocument, category; } }
 class Tests {
  static void Main() {
   var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString()); Directory.CreateDirectory(root);
@@ -17,6 +17,19 @@ class Tests {
    Check(scan.All(m => File.Exists(m.id)));
    File.Delete(Path.Combine(root,"Свердловка (2).swp")); Check(MacroFolder.Scan(root).Length == 2);
    Directory.CreateDirectory(Path.Combine(root,"nested")); File.WriteAllBytes(Path.Combine(root,"nested/hidden.swp"),Array.Empty<byte>());Check(MacroFolder.Scan(root).Length == 2);
+   MacroFolder.EnsureModules(root);
+   Check(MacroFolder.Modules.All(m => Directory.Exists(Path.Combine(root, m))));
+   foreach (var module in MacroFolder.Modules) File.WriteAllBytes(Path.Combine(root, module, "Одинаковый.swp"), Array.Empty<byte>());
+   scan = MacroFolder.Scan(root); Check(scan.Length == 6);
+   Check(scan.Select(m => m.id).Distinct().Count() == 6);
+   Check(scan.Single(m => m.category == "Детали").name == "Одинаковый");
+   Check(scan.Count(m => m.category == "Чертежи") == 2);
+   Check(scan.Single(m => m.category == "Лазер").requiredDocument == "active");
+   Directory.CreateDirectory(Path.Combine(root, "Детали", "nested"));
+   File.WriteAllBytes(Path.Combine(root, "Детали", "nested", "hidden.swp"), Array.Empty<byte>());
+   Check(MacroFolder.Scan(root).Length == 6);
+   Check(scan.Single(m => m.name == "Новый").category == "Без раздела");
+   MacroFolder.EnsureModules(root); Check(MacroFolder.Scan(root).Length == 6);
    var methods = MacroEntry.FromCom(new string[] {"Module1.main", "Module1.other", "Module1.main", "Module2.start", "invalid"});
    Check(methods.Length == 3);
    Check(methods.Single(e => e.Module == "Module2").Procedure == "start");
@@ -27,7 +40,7 @@ class Tests {
    Check(MacroEntry.FromCom(array).Length == 2);
    Check(MacroEntry.Parse(".main") == null && MacroEntry.Parse("A.") == null);
    Check(MacroEntry.Parse("  InsertWeldWithHoles.start  ").Module == "InsertWeldWithHoles");
-   Console.WriteLine("15 folder and procedure checks passed; no real macros used.");
+   Console.WriteLine("24 folder and procedure checks passed; no real macros used.");
   } finally { Directory.Delete(root,true); }
  }
 }

@@ -19,6 +19,8 @@ with zipfile.ZipFile(output, 'w', zipfile.ZIP_DEFLATED) as archive:
     for name, path in files.items():
         archive.write(path, 'SWToolsHub/' + name)
     archive.writestr('SWToolsHub/Library/Macros/', '')
+    for module in ('Детали', 'Чертежи', 'Сборки', 'Лазер'):
+        archive.writestr('SWToolsHub/Library/Macros/' + module + '/', '')
 with zipfile.ZipFile(output) as archive:
     assert archive.testzip() is None
     assert not any(n.lower().endswith('.swp') for n in archive.namelist())
