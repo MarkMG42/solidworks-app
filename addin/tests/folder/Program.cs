@@ -17,7 +17,17 @@ class Tests {
    Check(scan.All(m => File.Exists(m.id)));
    File.Delete(Path.Combine(root,"Свердловка (2).swp")); Check(MacroFolder.Scan(root).Length == 2);
    Directory.CreateDirectory(Path.Combine(root,"nested")); File.WriteAllBytes(Path.Combine(root,"nested/hidden.swp"),Array.Empty<byte>());Check(MacroFolder.Scan(root).Length == 2);
-   Console.WriteLine("8 folder checks passed; no real macros used.");
+   var methods = MacroEntry.FromCom(new string[] {"Module1.main", "Module1.other", "Module1.main", "Module2.start", "invalid"});
+   Check(methods.Length == 3);
+   Check(methods.Single(e => e.Module == "Module2").Procedure == "start");
+   Check(MacroEntry.FromCom(null).Length == 0);
+   Check(MacroEntry.FromCom("InsertWeldWithHoles.start")[0].Procedure == "start");
+   var array = Array.CreateInstance(typeof(object), new[] {2}, new[] {1});
+   array.SetValue("A.main",1); array.SetValue("B.start",2);
+   Check(MacroEntry.FromCom(array).Length == 2);
+   Check(MacroEntry.Parse(".main") == null && MacroEntry.Parse("A.") == null);
+   Check(MacroEntry.Parse("  InsertWeldWithHoles.start  ").Module == "InsertWeldWithHoles");
+   Console.WriteLine("15 folder and procedure checks passed; no real macros used.");
   } finally { Directory.Delete(root,true); }
  }
 }

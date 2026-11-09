@@ -12,7 +12,7 @@ namespace SWToolsHub.Portable
                 .Select(p => {
                     var name = Path.GetFileNameWithoutExtension(p);
                     bool auto = name.StartsWith("Авторазмер", StringComparison.OrdinalIgnoreCase);
-                    bool weld = name.StartsWith("Свердловка", StringComparison.OrdinalIgnoreCase);
+                    bool weld = name.StartsWith("Свердловка", StringComparison.OrdinalIgnoreCase) || name.StartsWith("Сверловка", StringComparison.OrdinalIgnoreCase) || name.StartsWith("Weldment Drilling", StringComparison.OrdinalIgnoreCase);
                     return new Macro { id = Path.GetFullPath(p), file = Path.GetFileName(p), name = name,
                         module = auto ? "FrameCutListDimensionsV3" : weld ? "InsertWeldWithHoles" : null,
                         procedure = auto ? "main" : weld ? "start" : null,

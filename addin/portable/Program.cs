@@ -122,20 +122,15 @@ namespace SWToolsHub.Portable
                     if (split > 0) { macro.module = entry.Substring(0, split); macro.procedure = entry.Substring(split + 1); }
                 }
                 if (chooseEntry || string.IsNullOrWhiteSpace(macro.module)) {
-                    object[] methods = null;
-                    try { methods = sw.GetMacroMethods(path, 0) as object[]; } catch (COMException) { /* Manual entry remains available. */ }
-                    var choices = methods == null ? new string[0] : methods.Select(m => Convert.ToString(m)).Where(m => m.Contains(".")).ToArray();
-                    using (var dialog = new Form { Text = "Точка входа: " + macro.name, Width = 420, Height = 180, StartPosition = FormStartPosition.CenterParent }) {
-                        var input = new ComboBox { Dock = DockStyle.Top, DropDownStyle = ComboBoxStyle.DropDown };
-                        input.Items.AddRange(choices); if (choices.Length > 0) input.SelectedIndex = 0;
-                        var hint = new Label { Dock = DockStyle.Top, Height = 44, Text = "Выберите процедуру или введите Модуль.Процедура.\nВыбор сохранится для этого файла." };
-                        var confirm = new Button { Text = "Запустить", Dock = DockStyle.Bottom, DialogResult = DialogResult.OK };
-                        dialog.Controls.Add(input); dialog.Controls.Add(hint); dialog.Controls.Add(confirm); dialog.AcceptButton = confirm;
+                    string preferred = null;
+                    if (!string.IsNullOrWhiteSpace(macro.module)) preferred = macro.module + "." + macro.procedure;
+                    string saved;
+                    if (settings.Entries.TryGetValue(path, out saved)) preferred = saved;
+                    using (var dialog = new EntryDialog(macro.name, () => sw.GetMacroMethods(path, 0), preferred)) {
                         if (dialog.ShowDialog(this) != DialogResult.OK) return;
-                        entry = input.Text.Trim(); int split = entry.LastIndexOf('.');
-                        if (split <= 0 || split == entry.Length - 1) throw new InvalidDataException("Укажите точку входа в формате Модуль.Процедура.");
-                        macro.module = entry.Substring(0, split); macro.procedure = entry.Substring(split + 1);
-                        settings.Entries[path] = entry; SaveSettings();
+                        var chosen = MacroEntry.Parse(dialog.Entry);
+                        macro.module = chosen.Module; macro.procedure = chosen.Procedure;
+                        settings.Entries[path] = chosen.FullName; SaveSettings();
                     }
                 }
                 status.Text = "Макрос выполняется…"; status.Refresh();
