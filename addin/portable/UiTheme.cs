@@ -43,6 +43,11 @@ namespace SWToolsHub.Portable
             fonts.Dispose();
             if (fontPath != null) RemoveFontResourceEx(fontPath, 0x10, IntPtr.Zero);
         }
+        public static Color Blend(Color from, Color to, float amount)
+        {
+            amount = Math.Max(0, Math.Min(1, amount));
+            return Color.FromArgb((int)Math.Round(from.R + (to.R - from.R) * amount), (int)Math.Round(from.G + (to.G - from.G) * amount), (int)Math.Round(from.B + (to.B - from.B) * amount));
+        }
         public static GraphicsPath Shape(RectangleF bounds, float radius)
         {
             var path = new GraphicsPath();
@@ -76,34 +81,61 @@ namespace SWToolsHub.Portable
         public bool LeadingIcon { get; set; }
         public bool Borderless { get; set; }
         private bool hovered;
-        public RoundedButton() { DoubleBuffered = true; ResizeRedraw = true; }
-        protected override void OnMouseEnter(EventArgs e) { hovered = true; Invalidate(); base.OnMouseEnter(e); }
-        protected override void OnMouseLeave(EventArgs e) { hovered = false; Invalidate(); base.OnMouseLeave(e); }
+        private bool hoverReady;
+        private bool stopping;
+        private float hoverProgress;
+        private readonly Timer hoverDelay = new Timer { Interval = 180 };
+        private readonly Timer hoverAnimation = new Timer { Interval = 15 };
+        public RoundedButton()
+        {
+            DoubleBuffered = true; ResizeRedraw = true;
+            hoverDelay.Tick += (s, e) => { hoverDelay.Stop(); if (hovered && Enabled) { hoverReady = true; hoverAnimation.Start(); } };
+            hoverAnimation.Tick += (s, e) => {
+                float target = hovered && hoverReady && Enabled ? 1 : 0;
+                hoverProgress = target > hoverProgress ? Math.Min(target, hoverProgress + .1f) : Math.Max(target, hoverProgress - .1f);
+                Invalidate(); if (Math.Abs(hoverProgress - target) < .001f) hoverAnimation.Stop();
+            };
+        }
+        protected override void OnMouseEnter(EventArgs e) { if (!stopping) { hovered = true; hoverDelay.Stop(); hoverDelay.Start(); } base.OnMouseEnter(e); }
+        protected override void OnMouseLeave(EventArgs e) { if (!stopping) { hovered = false; hoverReady = false; hoverDelay.Stop(); hoverAnimation.Start(); } base.OnMouseLeave(e); }
+        protected override void OnEnabledChanged(EventArgs e)
+        {
+            base.OnEnabledChanged(e);
+            if (!Enabled && !stopping) { hoverDelay.Stop(); hoverAnimation.Stop(); hovered = hoverReady = false; hoverProgress = 0; Invalidate(); }
+        }
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing) { stopping = true; hoverDelay.Dispose(); hoverAnimation.Dispose(); }
+            base.Dispose(disposing);
+        }
         protected override void OnPaint(PaintEventArgs e)
         {
             e.Graphics.Clear(Parent?.BackColor ?? BackColor);
             e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
             bool card = BackColor.ToArgb() == UiTheme.Card.ToArgb() || BackColor.ToArgb() == UiTheme.Selected.ToArgb();
-            bool accentActive = AccentHover && hovered && Enabled;
-            var hoverColor = accentActive ? UiTheme.AccentInk : IconOnly ? UiTheme.IconHover : card ? UiTheme.Selected : UiTheme.Background;
-            float diameter = Math.Max(1, Math.Min(Width, Height) - 2);
+            float progress = Enabled ? hoverProgress : 0;
+            float accentProgress = AccentHover ? progress : 0;
+            bool accentActive = accentProgress > 0;
+            var hoverColor = AccentHover ? UiTheme.AccentInk : IconOnly ? UiTheme.IconHover : card ? UiTheme.Selected : UiTheme.Background;
+            float available = Math.Max(1, Math.Min(Width, Height) - 2);
+            float diameter = Math.Min(available, Math.Max(1, Math.Min(Width, Height) * (36f / 46f) - 2) * (1 + .2f * accentProgress));
             var shapeBounds = IconOnly ? new RectangleF((Width - diameter) / 2, (Height - diameter) / 2, diameter, diameter) : new RectangleF(1, 1, Width - 2, Height - 2);
             using (var path = UiTheme.Shape(shapeBounds, IconOnly ? diameter / 2 : 16))
-            using (var fill = new SolidBrush(hovered && Enabled ? hoverColor : BackColor))
-            using (var pen = new Pen(accentActive ? UiTheme.AccentInk : Focused ? UiTheme.IconInk : IconOnly ? UiTheme.IconBorder : UiTheme.Border, Focused ? 2 : 1)) {
+            using (var fill = new SolidBrush(UiTheme.Blend(BackColor, hoverColor, progress)))
+            using (var pen = new Pen(UiTheme.Blend(Focused ? UiTheme.IconInk : IconOnly ? UiTheme.IconBorder : UiTheme.Border, UiTheme.AccentInk, accentProgress), Focused ? 2 : 1)) {
                 e.Graphics.FillPath(fill, path); if (!Borderless || Focused) e.Graphics.DrawPath(pen, path);
             }
             int iconSpace = (int)Math.Round(IconSize) + 8;
             if (Image != null) {
                 int normalSize = Math.Max(1, Math.Min((int)Math.Round(IconSize), Math.Min(Width, Height) - 8));
-                int size = accentActive ? Math.Min(Math.Min(Width, Height) - 6, (int)Math.Round(normalSize * 1.2)) : normalSize;
+                int size = accentActive ? Math.Min(Math.Min(Width, Height) - 6, (int)Math.Round(normalSize * (1 + .2f * accentProgress))) : normalSize;
                 int x = LeadingIcon ? Padding.Left : (Width - size) / 2;
                 int y = LeadingIcon ? Math.Max(8, (Height - Font.Height * (string.IsNullOrEmpty(SecondaryText) ? 3 : 2) - 2) / 2) : (Height - size) / 2;
                 var target = new Rectangle(x, y, size, size);
                 e.Graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
                 if (accentActive) {
                     using (var attributes = new ImageAttributes()) {
-                        var tint = new ColorMatrix { Matrix00 = 0, Matrix11 = 0, Matrix22 = 0, Matrix40 = 1, Matrix41 = 1, Matrix42 = 1 };
+                        var tint = new ColorMatrix { Matrix00 = 1 - accentProgress, Matrix11 = 1 - accentProgress, Matrix22 = 1 - accentProgress, Matrix40 = accentProgress, Matrix41 = accentProgress, Matrix42 = accentProgress };
                         attributes.SetColorMatrix(tint);
                         e.Graphics.DrawImage(Image, target, 0, 0, Image.Width, Image.Height, GraphicsUnit.Pixel, attributes);
                     }
@@ -112,7 +144,7 @@ namespace SWToolsHub.Portable
             }
             var textBounds = new Rectangle(Padding.Left, Padding.Top, Math.Max(1, Width - Padding.Horizontal), Math.Max(1, Height - Padding.Vertical));
             if (LeadingIcon) { textBounds.X += iconSpace; textBounds.Width = Math.Max(1, textBounds.Width - iconSpace); }
-            var textColor = accentActive ? Color.White : Enabled ? ForeColor : SystemColors.GrayText;
+            var textColor = Enabled ? UiTheme.Blend(ForeColor, Color.White, accentProgress) : SystemColors.GrayText;
             var flags = TextFormatFlags.VerticalCenter | TextFormatFlags.WordBreak | TextFormatFlags.EndEllipsis;
             flags |= TextAlign == ContentAlignment.MiddleCenter ? TextFormatFlags.HorizontalCenter : TextFormatFlags.Left;
             if (!string.IsNullOrEmpty(SecondaryText)) {
@@ -122,7 +154,7 @@ namespace SWToolsHub.Portable
                 var lineFlags = TextFormatFlags.Left | TextFormatFlags.SingleLine | TextFormatFlags.EndEllipsis;
                 TextRenderer.DrawText(e.Graphics, Text, Font, titleBounds, textColor, lineFlags);
                 using (var detailFont = new Font(Font.FontFamily, Math.Max(8, Font.Size - 1), Font.Style))
-                    TextRenderer.DrawText(e.Graphics, SecondaryText, detailFont, detailBounds, accentActive ? Color.White : UiTheme.Muted, lineFlags);
+                    TextRenderer.DrawText(e.Graphics, SecondaryText, detailFont, detailBounds, UiTheme.Blend(UiTheme.Muted, Color.White, accentProgress), lineFlags);
             } else TextRenderer.DrawText(e.Graphics, Text, Font, textBounds, textColor, flags);
         }
     }

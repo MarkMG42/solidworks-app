@@ -12,10 +12,10 @@ namespace SWToolsHub.Portable
         {
             BackColor = UiTheme.Background; ForeColor = UiTheme.Text;
             Font = UiTheme.CreateFont();
-            Text = "Модуль и процедура: " + name;
+            Text = "Выбор модуля и инструмента: " + name;
             StartPosition = FormStartPosition.CenterParent;
             AutoScaleMode = AutoScaleMode.Dpi;
-            ClientSize = new Size(640, 460); MinimumSize = new Size(580, 460);
+            ClientSize = new Size(640, 520); MinimumSize = SizeFromClientSize(new Size(560, 500));
             var layout = new TableLayoutPanel { Dock = DockStyle.Fill, Padding = new Padding(12), ColumnCount = 1, RowCount = 7 };
             layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
             foreach (var height in new[] { 88, 32, 42, 32, 42, 74, 54 }) layout.RowStyles.Add(new RowStyle(SizeType.Absolute, height));
@@ -55,7 +55,7 @@ namespace SWToolsHub.Portable
                 Entry = entry.FullName; DialogResult = DialogResult.OK;
             };
             layout.Controls.Add(info, 0, 0); layout.Controls.Add(new Label { Text = "Модуль", Dock = DockStyle.Fill }, 0, 1);
-            layout.Controls.Add(module, 0, 2); layout.Controls.Add(new Label { Text = "Процедура", Dock = DockStyle.Fill }, 0, 3);
+            layout.Controls.Add(module, 0, 2); layout.Controls.Add(new Label { Text = "Инструмент / процедура", Dock = DockStyle.Fill }, 0, 3);
             layout.Controls.Add(procedure, 0, 4); layout.Controls.Add(reload, 0, 5); layout.Controls.Add(buttons, 0, 6);
             foreach (var field in new[] { module, procedure }) { field.BackColor = UiTheme.Surface; field.ForeColor = ForeColor; field.FlatStyle = FlatStyle.Flat; }
             foreach (var button in new[] { reload, confirm, cancel }) { button.FlatStyle = FlatStyle.Flat; button.FlatAppearance.BorderSize = 0; button.BackColor = UiTheme.Card; button.ForeColor = UiTheme.OnCard; }
