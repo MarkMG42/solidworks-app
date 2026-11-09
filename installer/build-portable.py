@@ -6,6 +6,8 @@ import zipfile
 root = Path(__file__).resolve().parents[1]
 bin_dir = root / 'addin/portable/bin/Release/net48'
 files = {
+    'Fonts/SourceSans3-Semibold.ttf': bin_dir / 'Fonts/SourceSans3-Semibold.ttf',
+    'Fonts/LICENSE.md': bin_dir / 'Fonts/LICENSE.md',
     'SWToolsHub.exe': bin_dir / 'SWToolsHub.exe',
     'SWToolsHub.exe.config': bin_dir / 'SWToolsHub.exe.config',
     'SolidWorks.Interop.sldworks.dll': bin_dir / 'SolidWorks.Interop.sldworks.dll',

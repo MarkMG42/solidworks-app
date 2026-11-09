@@ -11,21 +11,21 @@ namespace SWToolsHub.Portable
         public EntryDialog(string name, Func<object> readMethods, string preferred)
         {
             BackColor = Color.FromArgb(15, 16, 18); ForeColor = Color.FromArgb(235, 236, 238);
-            Font = new Font("Segoe UI", 9.5f);
+            Font = UiTheme.CreateFont();
             Text = "Модуль и процедура: " + name;
             StartPosition = FormStartPosition.CenterParent;
             AutoScaleMode = AutoScaleMode.Dpi;
-            ClientSize = new Size(520, 320); MinimumSize = new Size(440, 340);
+            ClientSize = new Size(560, 390); MinimumSize = new Size(500, 420);
             var layout = new TableLayoutPanel { Dock = DockStyle.Fill, Padding = new Padding(12), ColumnCount = 1, RowCount = 7 };
             layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-            foreach (var height in new[] { 52, 24, 32, 24, 32, 58, 42 }) layout.RowStyles.Add(new RowStyle(SizeType.Absolute, height));
+            foreach (var height in new[] { 72, 26, 36, 26, 36, 66, 48 }) layout.RowStyles.Add(new RowStyle(SizeType.Absolute, height));
             var info = new Label { Dock = DockStyle.Fill, AutoEllipsis = true };
             var module = new ComboBox { Dock = DockStyle.Fill, DropDownStyle = ComboBoxStyle.DropDown };
             var procedure = new ComboBox { Dock = DockStyle.Fill, DropDownStyle = ComboBoxStyle.DropDown };
-            var reload = new Button { Text = "Загрузить процедуры из SolidWorks", AutoSize = true };
+            var reload = new RoundedButton { Text = "Загрузить процедуры из SolidWorks", AutoSize = true };
             var buttons = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.RightToLeft };
-            var confirm = new Button { Text = "Запустить", AutoSize = true };
-            var cancel = new Button { Text = "Отмена", DialogResult = DialogResult.Cancel, AutoSize = true };
+            var confirm = new RoundedButton { Text = "Запустить", AutoSize = true };
+            var cancel = new RoundedButton { Text = "Отмена", DialogResult = DialogResult.Cancel, AutoSize = true };
             buttons.Controls.Add(confirm); buttons.Controls.Add(cancel);
             var entries = new List<MacroEntry>();
             Action updateProcedures = () => {
