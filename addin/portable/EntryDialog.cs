@@ -15,10 +15,10 @@ namespace SWToolsHub.Portable
             Text = "Модуль и процедура: " + name;
             StartPosition = FormStartPosition.CenterParent;
             AutoScaleMode = AutoScaleMode.Dpi;
-            ClientSize = new Size(640, 460); MinimumSize = new Size(580, 460);
-            var layout = new TableLayoutPanel { Dock = DockStyle.Fill, Padding = new Padding(12), ColumnCount = 1, RowCount = 7 };
+            ClientSize = new Size(960, 690); MinimumSize = new Size(870, 690);
+            var layout = new TableLayoutPanel { Dock = DockStyle.Fill, Padding = new Padding(18), ColumnCount = 1, RowCount = 7 };
             layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-            foreach (var height in new[] { 88, 32, 42, 32, 42, 74, 54 }) layout.RowStyles.Add(new RowStyle(SizeType.Absolute, height));
+            foreach (var height in new[] { 132, 48, 63, 48, 63, 111, 81 }) layout.RowStyles.Add(new RowStyle(SizeType.Absolute, height));
             var info = new Label { Dock = DockStyle.Fill, AutoEllipsis = true };
             var module = new ComboBox { Dock = DockStyle.Fill, DropDownStyle = ComboBoxStyle.DropDown };
             var procedure = new ComboBox { Dock = DockStyle.Fill, DropDownStyle = ComboBoxStyle.DropDown };
