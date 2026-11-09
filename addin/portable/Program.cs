@@ -30,10 +30,13 @@ namespace SWToolsHub.Portable
         private Macro[] macros = new Macro[0];
         private bool busy;
         private string macroFolder;
+        private readonly ToolTip tips = new ToolTip();
+        private readonly TableLayoutPanel moduleGrid = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 2, Margin = new Padding(20, 4, 20, 8) };
         private readonly Label folderLabel = new Label { Dock = DockStyle.Top, Height = 42, AutoEllipsis = true };
         private readonly FlowLayoutPanel content = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.TopDown, WrapContents = false, AutoScroll = true, Padding = new Padding(16, 0, 16, 0) };
         private readonly Label heading = new Label { Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft };
         private readonly Label count = new Label { Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft };
+        private Font titleFont;
         private string section;
         private bool favoritesOnly;
         private static readonly Color Background = Color.FromArgb(15, 16, 18);
@@ -67,27 +70,34 @@ namespace SWToolsHub.Portable
             AutoScaleMode = AutoScaleMode.Dpi;
             ClientSize = new Size(390, 760); MinimumSize = new Size(340, 540);
             StartPosition = FormStartPosition.CenterScreen;
-            Font = new Font("Segoe UI", 9.5f); BackColor = Background; ForeColor = Foreground;
-            var shell = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 8, Padding = new Padding(0) };
+            Font = new Font("Segoe UI", 9.5f); titleFont = new Font(Font, FontStyle.Bold); BackColor = Background; ForeColor = Foreground;
+            var shell = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 7, Padding = new Padding(0) };
             shell.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-            foreach (var height in new[] { 64, 48, 38 }) shell.RowStyles.Add(new RowStyle(SizeType.Absolute, height));
+            foreach (var height in new[] { 64, 48, 24, 190 }) shell.RowStyles.Add(new RowStyle(SizeType.Absolute, height));
             shell.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-            foreach (var height in new[] { 54, 44, 48, 34 }) shell.RowStyles.Add(new RowStyle(SizeType.Absolute, height));
-            var brand = new Label { Text = "▦  SW Tools Hub", Dock = DockStyle.Fill, Padding = new Padding(20, 0, 0, 0), TextAlign = ContentAlignment.MiddleLeft, Font = new Font(Font, FontStyle.Bold) };
+            shell.RowStyles.Add(new RowStyle(SizeType.Absolute, 44)); shell.RowStyles.Add(new RowStyle(SizeType.Absolute, 34));
+            var header = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 4, RowCount = 1, Padding = new Padding(20, 12, 16, 12) };
+            header.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            for (int i = 0; i < 3; i++) header.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 40));
+            var brand = new Label { Text = "SW Tools Hub", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft, Font = titleFont };
+            var favorites = MakeButton(""); var choose = MakeButton("");
+            ConfigureIcon(favorites, "star", "Избранные макросы");
+            ConfigureIcon(run, "play", "Выбрать процедуру и запустить выбранный макрос");
+            ConfigureIcon(choose, "folder", "Выбрать корневую папку библиотеки");
+            favorites.Click += (s, e) => { search.Clear(); Navigate(null, !favoritesOnly); };
+            header.Controls.Add(brand, 0, 0); header.Controls.Add(favorites, 1, 0); header.Controls.Add(run, 2, 0); header.Controls.Add(choose, 3, 0);
             var searchBox = new Panel { Dock = DockStyle.Fill, Padding = new Padding(12, 12, 12, 8), Margin = new Padding(20, 0, 20, 8), BackColor = Surface };
             search.BackColor = Surface; search.ForeColor = Foreground; search.AccessibleName = "Поиск макросов";
-            searchBox.Controls.Add(search);
+            searchBox.Controls.Add(search); tips.SetToolTip(search, "Поиск по выбранному разделу; на главной — по всей библиотеке");
             heading.Padding = new Padding(20, 0, 0, 0);
-            heading.Text = "Найти инструмент — введите название выше"; heading.ForeColor = Muted;
+            heading.Text = "Поиск макросов"; heading.ForeColor = Muted;
             status.Height = 44; status.Padding = new Padding(20, 4, 20, 0); status.ForeColor = Muted;
             folderLabel.Visible = false;
-            run.Margin = new Padding(20, 5, 20, 5); run.Dock = DockStyle.Fill;
-            StyleButton(run, true);
-            var choose = MakeButton("Выбрать папку макросов…"); choose.Dock = DockStyle.Fill; choose.Margin = new Padding(20, 2, 20, 4);
+            moduleGrid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50)); moduleGrid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
+            moduleGrid.RowStyles.Add(new RowStyle(SizeType.Percent, 50)); moduleGrid.RowStyles.Add(new RowStyle(SizeType.Percent, 50));
             count.Padding = new Padding(20, 0, 0, 0); count.ForeColor = Muted;
-            shell.Controls.Add(brand, 0, 0); shell.Controls.Add(searchBox, 0, 1); shell.Controls.Add(heading, 0, 2);
-            shell.Controls.Add(content, 0, 3); shell.Controls.Add(run, 0, 4); shell.Controls.Add(status, 0, 5);
-            shell.Controls.Add(choose, 0, 6); shell.Controls.Add(count, 0, 7);
+            shell.Controls.Add(header, 0, 0); shell.Controls.Add(searchBox, 0, 1); shell.Controls.Add(heading, 0, 2);
+            shell.Controls.Add(moduleGrid, 0, 3); shell.Controls.Add(content, 0, 4); shell.Controls.Add(status, 0, 5); shell.Controls.Add(count, 0, 6);
             Controls.Add(shell);
             content.SizeChanged += (s, e) => RenderLibrary();
             choose.Click += (s, e) => {
@@ -97,11 +107,12 @@ namespace SWToolsHub.Portable
                     if (selectedFolder == null) return;
                     MacroFolder.EnsureModules(selectedFolder);
                     settings.Folder = selectedFolder; SaveSettings(); macroFolder = selectedFolder;
+                    tips.SetToolTip(choose, "Библиотека: " + macroFolder + "\nВыбрать другую корневую папку");
                     folderLabel.Text = macroFolder; ReloadFolder();
                 } catch (Exception ex) { ShowError("Не удалось выбрать папку: " + ex.Message); }
             };
             refresh.Tick += (s, e) => ReloadFolder();
-            FormClosed += (s, e) => refresh.Dispose();
+            FormClosed += (s, e) => { refresh.Dispose(); tips.Dispose(); titleFont.Dispose(); };
             search.TextChanged += (s, e) => Filter();
             list.SelectedIndexChanged += (s, e) => run.Enabled = !busy && list.SelectedItem != null;
             run.Click += (s, e) => RunSelected(true);
@@ -121,10 +132,44 @@ namespace SWToolsHub.Portable
         private void Filter()
         {
             var selectedId = (list.SelectedItem as Macro)?.id;
-            list.DataSource = macros.Where(m => m.name.IndexOf(search.Text.Trim(), StringComparison.OrdinalIgnoreCase) >= 0).ToArray();
-            if (selectedId != null) list.SelectedItem = macros.FirstOrDefault(m => m.id == selectedId);
+            list.DataSource = VisibleMacros();
+            list.SelectedItem = selectedId == null ? null : macros.FirstOrDefault(m => m.id == selectedId);
             run.Enabled = !busy && list.SelectedItem != null;
             RenderLibrary();
+        }
+        private Macro[] VisibleMacros()
+        {
+            bool home = section == null && string.IsNullOrWhiteSpace(search.Text);
+            return macros.Where(m => m.name.IndexOf(search.Text.Trim(), StringComparison.OrdinalIgnoreCase) >= 0
+                && (section == null || m.category == section)
+                && (!(home || favoritesOnly) || settings.Favorites.Contains(m.id, StringComparer.OrdinalIgnoreCase))).ToArray();
+        }
+        private void ConfigureIcon(Button button, string icon, string description)
+        {
+            StyleButton(button); button.Text = ""; button.Dock = DockStyle.Fill;
+            button.Margin = new Padding(2); button.Padding = new Padding(0);
+            button.Image = DrawIcon(icon); button.ImageAlign = ContentAlignment.MiddleCenter;
+            button.AccessibleName = description; tips.SetToolTip(button, description);
+            button.Disposed += (s, e) => button.Image.Dispose();
+        }
+        private static Bitmap DrawIcon(string kind)
+        {
+            var image = new Bitmap(24, 24);
+            using (var g = Graphics.FromImage(image))
+            using (var pen = new Pen(Foreground, 1.6f)) {
+                g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+                if (kind == "folder") g.DrawPolygon(pen, new[] { new Point(3, 6), new Point(10, 6), new Point(12, 9), new Point(21, 9), new Point(21, 19), new Point(3, 19) });
+                else if (kind == "play") g.DrawPolygon(pen, new[] { new Point(8, 4), new Point(20, 12), new Point(8, 20) });
+                else {
+                    var points = Enumerable.Range(0, 10).Select(i => {
+                        double angle = -Math.PI / 2 + i * Math.PI / 5;
+                        double radius = i % 2 == 0 ? 9 : 4;
+                        return new PointF(12 + (float)(Math.Cos(angle) * radius), 12 + (float)(Math.Sin(angle) * radius));
+                    }).ToArray();
+                    g.DrawPolygon(pen, points);
+                }
+            }
+            return image;
         }
         private static void StyleButton(Button button, bool primary = false)
         {
@@ -141,7 +186,7 @@ namespace SWToolsHub.Portable
         }
         private void Navigate(string target, bool favorites = false)
         {
-            section = target; favoritesOnly = favorites; RenderLibrary();
+            section = target; favoritesOnly = favorites; Filter();
         }
         private void RenderLibrary()
         {
@@ -150,28 +195,22 @@ namespace SWToolsHub.Portable
             foreach (Control child in content.Controls.Cast<Control>().ToArray()) child.Dispose();
             int width = Math.Max(240, content.ClientSize.Width - 36 - SystemInformation.VerticalScrollBarWidth);
             bool searching = !string.IsNullOrWhiteSpace(search.Text);
-            if (section == null && !favoritesOnly && !searching) {
-                var grid = new TableLayoutPanel { Width = width, Height = 190, ColumnCount = 2, RowCount = 2, Margin = new Padding(0, 4, 0, 18) };
-                grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50)); grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
-                grid.RowStyles.Add(new RowStyle(SizeType.Percent, 50)); grid.RowStyles.Add(new RowStyle(SizeType.Percent, 50));
-                var symbols = new[] { "◇", "▤", "▦", "⌁" };
-                for (int i = 0; i < MacroFolder.Modules.Length; i++) {
-                    string module = MacroFolder.Modules[i];
-                    var tile = MakeButton(symbols[i] + "  " + module + "\n\n" + macros.Count(m => m.category == module) + " макросов");
-                    tile.Dock = DockStyle.Fill; tile.Margin = new Padding(4); tile.AccessibleName = module;
-                    tile.Click += (s, e) => Navigate(module); grid.Controls.Add(tile, i % 2, i / 2);
-                }
-                content.Controls.Add(grid);
-            } else {
-                var back = MakeButton("‹  Все разделы"); back.Width = width;
-                back.Click += (s, e) => { search.Clear(); Navigate(null); }; content.Controls.Add(back);
+            moduleGrid.SuspendLayout();
+            foreach (Control child in moduleGrid.Controls.Cast<Control>().ToArray()) child.Dispose();
+            var symbols = new[] { "◇", "▤", "▦", "⌁" };
+            for (int i = 0; i < MacroFolder.Modules.Length; i++) {
+                string module = MacroFolder.Modules[i];
+                var tile = MakeButton(symbols[i] + "  " + module + "\n\n" + macros.Count(m => m.category == module) + " макросов");
+                tile.Dock = DockStyle.Fill; tile.Margin = new Padding(4); tile.AccessibleName = module;
+                if (section == module) tile.BackColor = Color.FromArgb(47, 51, 57);
+                tile.Click += (s, e) => Navigate(section == module ? null : module);
+                moduleGrid.Controls.Add(tile, i % 2, i / 2);
             }
+            moduleGrid.ResumeLayout();
             bool home = section == null && !favoritesOnly && !searching;
             string title = home || favoritesOnly ? "Избранные инструменты" : searching ? "Результаты поиска" : section;
-            content.Controls.Add(new Label { Text = title, Width = width, Height = 38, TextAlign = ContentAlignment.MiddleLeft, Font = new Font(Font, FontStyle.Bold) });
-            var visible = macros.Where(m => (!searching || m.name.IndexOf(search.Text.Trim(), StringComparison.OrdinalIgnoreCase) >= 0)
-                && (section == null || m.category == section)
-                && (!(home || favoritesOnly) || settings.Favorites.Contains(m.id, StringComparer.OrdinalIgnoreCase))).ToArray();
+            content.Controls.Add(new Label { Text = title, Width = width, Height = 38, TextAlign = ContentAlignment.MiddleLeft, Font = titleFont });
+            var visible = VisibleMacros();
             foreach (var macro in visible) {
                 var row = new TableLayoutPanel { Width = width, Height = 60, ColumnCount = 3, RowCount = 1, Margin = new Padding(0, 0, 0, 4) };
                 row.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 40)); row.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100)); row.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 40));
@@ -183,7 +222,7 @@ namespace SWToolsHub.Portable
                     settings.Favorites.RemoveAll(id => string.Equals(id, macro.id, StringComparison.OrdinalIgnoreCase));
                     if (!favorite) settings.Favorites.Add(macro.id);
                     try { SaveSettings(); } catch (Exception ex) { settings.Favorites = previous; ShowError("Не удалось сохранить избранное: " + ex.Message); }
-                    RenderLibrary();
+                    Filter();
                 };
                 var name = MakeButton(macro.name); name.Dock = DockStyle.Fill; name.AutoEllipsis = true;
                 if ((list.SelectedItem as Macro)?.id == macro.id) name.BackColor = Color.FromArgb(47, 51, 57);
@@ -195,7 +234,6 @@ namespace SWToolsHub.Portable
             }
             if (visible.Length == 0) content.Controls.Add(new Label { Text = home || favoritesOnly ? "Нажмите ☆ рядом с макросом в разделе,\nчтобы добавить его в избранное." : "Макросов пока нет. Добавьте .swp в папку\nраздела или измените запрос поиска.", Width = width, Height = 70, ForeColor = Muted });
             if (home) {
-                var allFavorites = MakeButton("Все избранные →"); allFavorites.Width = width; allFavorites.Click += (s, e) => Navigate(null, true); content.Controls.Add(allFavorites);
                 if (macros.Any(m => m.category == "Без раздела")) {
                     var unsorted = MakeButton("Без раздела →"); unsorted.Width = width; unsorted.Click += (s, e) => Navigate("Без раздела"); content.Controls.Add(unsorted);
                 }
@@ -209,7 +247,7 @@ namespace SWToolsHub.Portable
             if (busy) return;
             var selected = list.SelectedItem as Macro;
             if (selected == null) { ShowError("Выберите инструмент."); return; }
-            busy = true; run.Enabled = false; list.Enabled = false; content.Enabled = false;
+            busy = true; run.Enabled = false; list.Enabled = false; content.Enabled = false; moduleGrid.Enabled = false;
             SldWorks sw = null; ModelDoc2 document = null;
             try
             {
@@ -254,7 +292,7 @@ namespace SWToolsHub.Portable
             finally
             {
                 Release(document); Release(sw);
-                busy = false; list.Enabled = true; content.Enabled = true; run.Enabled = list.SelectedItem != null;
+                busy = false; list.Enabled = true; content.Enabled = true; moduleGrid.Enabled = true; run.Enabled = list.SelectedItem != null;
             }
         }
         private static void Release(object value)
