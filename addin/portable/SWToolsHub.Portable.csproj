@@ -2,11 +2,12 @@
   <PropertyGroup>
     <TargetFramework>net48</TargetFramework><OutputType>WinExe</OutputType>
     <PlatformTarget>x64</PlatformTarget><UseWindowsForms>true</UseWindowsForms>
-    <AssemblyName>SWToolsHub</AssemblyName><LangVersion>latest</LangVersion>
+    <AssemblyName>SW-Assistant</AssemblyName><Product>SW-Assistant</Product><ApplicationIcon>Assets/AppIcon.ico</ApplicationIcon><LangVersion>latest</LangVersion>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <SolidWorksInteropPath Condition="'$(SolidWorksInteropPath)' == ''">C:\Program Files\SOLIDWORKS Corp\SOLIDWORKS\api\redist</SolidWorksInteropPath>
   </PropertyGroup>
   <ItemGroup>
+    <EmbeddedResource Include="Assets/AppIcon.ico" LogicalName="AppIcon.ico" />
     <Content Include="Fonts/*"><CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory></Content>
     <Compile Include="../Catalog.cs" Link="Catalog.cs" />
     <Reference Include="System.Web.Extensions" />

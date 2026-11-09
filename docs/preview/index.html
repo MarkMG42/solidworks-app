@@ -1,4 +1,4 @@
-<!doctype html><html lang="ru"><meta charset="utf-8"><title>SW Tools Hub — предварительный просмотр</title><style>
+<!doctype html><html lang="ru"><meta charset="utf-8"><title>SW-Assistant — предварительный просмотр</title><style>
 @font-face{font-family:'Source Sans 3';src:url('fonts/SourceSans3-Regular.ttf') format('truetype');font-weight:400;font-style:normal;font-display:block}
 
 @font-face{font-family:'Source Sans 3';src:url('../../addin/portable/Fonts/SourceSans3-Bold.ttf') format('truetype');font-weight:700;font-style:normal;font-display:block}
@@ -16,7 +16,7 @@ button,input{font:inherit}
 button{cursor:pointer;color:inherit;background:#F8F3E8;border:1px solid #E3DCCF;border-radius:16px}
 svg{width:calc(24px * var(--s));height:calc(24px * var(--s));fill:none;stroke:currentColor;stroke-width:1.35;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
 .toolbar button,.row-star,.row-play{width:calc(36px * var(--s));height:calc(36px * var(--s));padding:0;display:grid;place-items:center;background:#FCF7F0;border:1px solid #DEC7B1;border-radius:50%;flex-shrink:0}
-.toolbar button{color:#C6532E;aspect-ratio:1/1;align-self:center}
+.toolbar button{color:#F06424;aspect-ratio:1/1;align-self:center}
 .toolbar button:hover,.row-star:hover,.row-play:hover{background:#F6E8DA}
 .toolbar .disabled{opacity:.35}
 .search{height:max(42px,calc(48px * var(--s)));margin:0 calc(20px * var(--s)) calc(8px * var(--s));padding:calc(8px * var(--s)) calc(12px * var(--s));display:flex;align-items:center;gap:calc(8px * var(--s));background:#F8F3E8;border:1px solid #E3DCCF;border-radius:16px;flex-shrink:0}
@@ -27,7 +27,7 @@ svg{width:calc(24px * var(--s));height:calc(24px * var(--s));fill:none;stroke:cu
 .modules{height:calc(112px * var(--s));margin:calc(4px * var(--s)) calc(20px * var(--s)) calc(8px * var(--s));display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:calc(8px * var(--s));flex-shrink:0}
 .tile{text-align:left;min-width:0;padding:calc(12px * var(--s)) calc(14px * var(--s));display:flex;flex-direction:column;justify-content:center;gap:calc(8px * var(--s));background:#F8F3E8}
 .tile .caption{display:flex;gap:calc(8px * var(--s));align-items:center}
-.tile svg{color:#C6532E}
+.tile svg{color:#F06424}
 .tile small{font-size:17.333px;color:#706D61;padding-left:calc(32px * var(--s))}
 .tile:hover,.tile.active{background:#F0E7D8;border-color:#C6C2B5}
 .content{flex:1;min-height:calc(240px * var(--s));margin:calc(10px * var(--s)) calc(20px * var(--s)) calc(20px * var(--s));padding:calc(16px * var(--s)) calc(14px * var(--s));overflow:visible;background:#F8F3E8;border:1px solid #E3DCCF;border-radius:16px}
@@ -39,47 +39,47 @@ h2{margin:0 0 calc(16px * var(--s))}
 .macro-name span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .macro-name small{display:block;margin-top:calc(5px * var(--s));color:#706D61;font-size:17.333px}
 .macro-name:hover,.macro-name.selected{background:#F0E7D8}
-.row-star,.row-play{align-self:center;justify-self:center;color:#C6532E}
-.row-play,.toolbar button{transition:background-color .14s ease,color .14s ease,border-color .14s ease}
-.row-play svg,.toolbar button svg{transition:transform .14s ease}
-.row-play:hover,.toolbar button:hover{background:#C6532E;color:#FFF;border-color:#C6532E}
+.row-star,.row-play{align-self:center;justify-self:center;color:#F06424}
+.row-play,.toolbar button{transition:background-color .10s ease,color .10s ease,border-color .10s ease}
+.row-play svg,.toolbar button svg{transition:transform .10s ease}
+.row-play:hover,.toolbar button:hover{background:#F06424;color:#FFF;border-color:#F06424}
 .row-play:hover svg,.toolbar button:hover svg{transform:scale(1.2)}
 button:focus-visible{outline:2px solid #706D61;outline-offset:2px}
 .search:focus-within{border-color:#706D61}
 .status,.footer{display:none}
 @container (max-width:719px){.modules{grid-template-columns:repeat(2,minmax(0,1fr));height:calc(224px * var(--s))}}
 .app::-webkit-scrollbar{width:12px}.app::-webkit-scrollbar-track{background:#F6F2EA}.app::-webkit-scrollbar-thumb{background:#C5BCAF;border:3px solid #F6F2EA;border-radius:8px}.app::-webkit-scrollbar-thumb:hover{background:#AFA18E}
-.tile{transition:background-color .14s ease,color .14s ease,border-color .14s ease}.tile svg{transition:transform .14s ease,color .14s ease}
-.tile:hover{background:#C6532E;color:#FFFFFF;border-color:#C6532E}.tile:hover svg,.tile:hover small{color:#FFFFFF}.tile:hover svg{transform:scale(1.2)}
+.tile{transition:background-color .10s ease,color .10s ease,border-color .10s ease}.tile svg{transition:transform .10s ease,color .10s ease}
+.tile:hover{background:#F06424;color:#FFFFFF;border-color:#F06424}.tile:hover svg,.tile:hover small{color:#FFFFFF}.tile:hover svg{transform:scale(1.2)}
 
 /* Reserve the enlarged circle's space so hover never moves the layout. */
 .toolbar button,.row-star,.row-play{width:calc(46px * var(--s));height:calc(46px * var(--s));position:relative;isolation:isolate;background:transparent!important;border:0}
-.toolbar button::before,.row-star::before,.row-play::before{content:'';position:absolute;inset:calc(5px * var(--s));z-index:-1;border:1px solid #DEC7B1;border-radius:50%;background:#FCF7F0;transition:transform .15s ease,background-color .15s ease,border-color .15s ease}
-.toolbar button,.row-star,.row-play,.tile,.macro-name{transition:background-color .15s ease,color .15s ease,border-color .15s ease}
-.toolbar button svg,.row-play svg,.tile svg{transition:transform .15s ease,color .15s ease}
-.toolbar button:hover,.row-star:hover,.row-play:hover,.tile:hover,.macro-name:hover{transition-delay:.09s}
-.toolbar button:hover::before,.row-play:hover::before{background:#C6532E;border-color:#C6532E;transform:scale(1.2);transition-delay:.09s}
-.row-star:hover::before{background:#F6E8DA;transition-delay:.09s}
-.toolbar button:hover svg,.row-play:hover svg,.tile:hover svg{transition-delay:.09s}
-.tile small{transition:color .15s ease}.tile:hover small{transition-delay:.09s}
+.toolbar button::before,.row-star::before,.row-play::before{content:'';position:absolute;inset:calc(5px * var(--s));z-index:-1;border:1px solid #DEC7B1;border-radius:50%;background:#FCF7F0;transition:transform .10s ease,background-color .10s ease,border-color .10s ease}
+.toolbar button,.row-star,.row-play,.tile,.macro-name{transition:background-color .10s ease,color .10s ease,border-color .10s ease}
+.toolbar button svg,.row-play svg,.tile svg{transition:transform .10s ease,color .10s ease}
+.toolbar button:hover,.row-star:hover,.row-play:hover,.tile:hover,.macro-name:hover{transition-delay:.06s}
+.toolbar button:hover::before,.row-play:hover::before{background:#F06424;border-color:#F06424;transform:scale(1.2);transition-delay:.06s}
+.row-star:hover::before{background:#F6E8DA;transition-delay:.06s}
+.toolbar button:hover svg,.row-play:hover svg,.tile:hover svg{transition-delay:.06s}
+.tile small{transition:color .10s ease}.tile:hover small{transition-delay:.06s}
 dialog{width:min(560px,calc(100vw - 40px));padding:24px;border:1px solid #E3DCCF;border-radius:16px;background:#FDFCF8;color:#24231F;box-shadow:0 18px 70px #0003;font:inherit}
 dialog::backdrop{background:#24231F55}dialog h2{margin-bottom:12px}dialog p{font-size:16px;color:#706D61;margin:0 0 20px}dialog label{display:block;margin:12px 0 6px}dialog select{width:100%;padding:10px;font:inherit;border:1px solid #E3DCCF;border-radius:10px;background:#F8F3E8;color:#24231F}.entry-buttons{display:flex;justify-content:flex-end;gap:10px;margin-top:24px}.entry-buttons button{padding:10px 18px}
 
 /* Preview only: editable application controls are unchanged until design approval. */
 dialog select,dialog select::picker(select){appearance:base-select;font-family:'Source Sans 3','Segoe UI',sans-serif;font-size:18.667px;font-weight:400}
 dialog select{padding:10px 18px;border-color:#E3DCCF;display:flex;align-items:center;justify-content:space-between}
-dialog select::picker-icon{color:#706D61;margin-inline-start:auto;margin-inline-end:6px;rotate:0deg;transition:rotate .15s ease}
+dialog select::picker-icon{color:#706D61;margin-inline-start:auto;margin-inline-end:6px;rotate:0deg;transition:rotate .10s ease}
 dialog select:open::picker-icon{rotate:180deg}
 dialog select::picker(select){position:fixed;position-area:none;position-try-fallbacks:none;inset:auto;top:var(--picker-top);left:var(--picker-left);width:var(--picker-width);margin:0;padding:4px;border:1px solid #E3DCCF;border-radius:10px;background:#FDFCF8;color:#24231F;box-shadow:0 10px 30px #24231F22}
 dialog select option{padding:9px 12px;border-radius:6px;font-weight:400}
 dialog select option:hover,dialog select option:focus{background:#F0E7D8}
-</style><body><div class="window"><div class="titlebar"><span>▦ &nbsp; SW Tools Hub</span><span>− □ ×</span></div><main class="app"><div class="page"><header class="header"><strong>SW Tools Hub</strong><div class="toolbar"><button title="Выбрать папку библиотеки" onclick="document.getElementById('status').textContent='В приложении откроется системный выбор папки Windows.'"><svg viewBox="0 0 24 24"><path d="M3 6h7l2 3h9v10H3Z"/></svg></button></div></header><div class="search"><svg viewBox="0 0 24 24"><circle cx="10" cy="10" r="6"/><path d="m15 15 5 5"/></svg><input aria-label="Поиск макросов" oninput="render()" placeholder="Найти макрос…"></div><div class="hint">Поиск макросов</div><section class="modules"><button class="tile" onclick="show('Избранное',this)"><span class="caption"><svg viewBox="0 0 24 24"><path d="m12 3 2.7 5.5 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9Z"/></svg>Избранное</span><small>0 макросов</small></button><button class="tile" onclick="show('Чертежи',this)"><span class="caption"><svg viewBox="0 0 24 24"><path d="M5 3h10l4 4v14H5Zm10 0v5h4M8 12h8M8 16h5"/></svg>Чертежи</span><small>0 макросов</small></button><button class="tile" onclick="show('Сборки',this)"><span class="caption"><svg viewBox="0 0 24 24"><path d="m12 2 5 3v6l-5 3-5-3V5Zm-5 9-5 3v6l5 3 5-3v-6Zm10 0-5 3v6l5 3 5-3v-6Z"/></svg>Сборки</span><small>0 макросов</small></button><button class="tile" onclick="show('Лазер',this)"><span class="caption"><svg viewBox="0 0 24 24"><path d="M7 3h10v5l-5 4-5-4Zm5 9v7M3 21h18M6 13l-3 3m15-3 3 3"/></svg>Лазер</span><small>0 макросов</small></button></section><section class="content"><h2 id="heading">Избранные инструменты</h2><div id="rows"></div><p class="empty" id="empty">Нажмите ☆ рядом с макросом в разделе,<br>чтобы добавить его в избранное.</p></section><div class="status" id="status">Добавьте .swp в папки разделов библиотеки.</div><footer class="footer">0 инструментов · Portable</footer></div></main></div><dialog id="entry-dialog"><h2 id="entry-title">Выбор модуля и инструмента</h2><p>Выберите модуль и инструмент для выбранного макроса.</p><label for="entry-module">Модуль</label><select id="entry-module"></select><label for="entry-procedure">Инструмент / процедура</label><select id="entry-procedure"></select><div class="entry-buttons"><button id="entry-cancel">Отмена</button><button id="entry-confirm">Запустить</button></div></dialog><script>
+</style><body><div class="window"><div class="titlebar"><span><span class="brand-icon"><svg viewBox="0 0 24 24"><path d="m12 2 5 3v6l-5 3-5-3V5Zm-5 9-5 3v6l5 3 5-3v-6Zm10 0-5 3v6l5 3 5-3v-6Z"/><path d="m18 2 4 2-4 2Z"/></svg></span> &nbsp; SW-Assistant</span><span>− □ ×</span></div><main class="app"><div class="page"><header class="header"><strong>SW-Assistant</strong><div class="toolbar"><button title="Выбрать папку библиотеки" onclick="document.getElementById('status').textContent='В приложении откроется системный выбор папки Windows.'"><svg viewBox="0 0 24 24"><path d="M3 6h7l2 3h9v10H3Z"/></svg></button></div></header><div class="search"><svg viewBox="0 0 24 24"><circle cx="10" cy="10" r="6"/><path d="m15 15 5 5"/></svg><input aria-label="Поиск макросов" oninput="render()" placeholder="Найти макрос…"></div><div class="hint">Поиск макросов</div><section class="modules"><button class="tile" onclick="show('Избранное',this)"><span class="caption"><svg viewBox="0 0 24 24"><path d="m12 3 2.7 5.5 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9Z"/></svg>Избранное</span><small>0 макросов</small></button><button class="tile" onclick="show('Чертежи',this)"><span class="caption"><svg viewBox="0 0 24 24"><path d="M5 3h10l4 4v14H5Zm10 0v5h4M8 12h8M8 16h5"/></svg>Чертежи</span><small>0 макросов</small></button><button class="tile" onclick="show('Сборки',this)"><span class="caption"><svg viewBox="0 0 24 24"><path d="m12 2 5 3v6l-5 3-5-3V5Zm-5 9-5 3v6l5 3 5-3v-6Zm10 0-5 3v6l5 3 5-3v-6Z"/></svg>Сборки</span><small>0 макросов</small></button><button class="tile" onclick="show('Лазер',this)"><span class="caption"><svg viewBox="0 0 24 24"><path d="M7 3h10v5l-5 4-5-4Zm5 9v7M3 21h18M6 13l-3 3m15-3 3 3"/></svg>Лазер</span><small>0 макросов</small></button></section><section class="content"><h2 id="heading">Избранные инструменты</h2><div id="rows"></div><p class="empty" id="empty">Нажмите ☆ рядом с макросом в разделе,<br>чтобы добавить его в избранное.</p></section><div class="status" id="status">Добавьте .swp в папки разделов библиотеки.</div><footer class="footer">0 инструментов · Portable</footer></div></main></div><dialog id="entry-dialog"><h2 id="entry-title">Выбор модуля и инструмента</h2><p>Выберите модуль и инструмент для выбранного макроса.</p><label for="entry-module">Модуль</label><select id="entry-module"></select><label for="entry-procedure">Инструмент / процедура</label><select id="entry-procedure"></select><div class="entry-buttons"><button id="entry-cancel">Отмена</button><button id="entry-confirm">Запустить</button></div></dialog><script>
 // Данные только для предварительного просмотра: рабочие .swp не добавляются.
-const macros=[{name:'Авторазмер Рамы',category:'Чертежи',favorite:true},{name:'Экспорт DXF',category:'Лазер',favorite:true}];
+const macros=[{name:'Проверка чертежа',category:'Чертежи',favorite:false},{name:'Проверка на исключение из спецификации',category:'Сборки',favorite:false},{name:'Проверка контура',category:'Лазер',favorite:false}];
 let section=null, selected=null;
 function macroCount(value){const form=new Intl.PluralRules('ru').select(value);return value+' '+({one:'макрос',few:'макроса',many:'макросов',other:'макроса'}[form])}
 function show(title,button){if(title==='Избранное'){section=null;document.querySelector('input').value=''}else section=section===title?null:title;render()}
-function render(){const query=document.querySelector('input').value.trim().toLowerCase();const home=!section&&!query;document.getElementById('heading').textContent=home?'Избранные инструменты':query?'Результаты поиска':section;document.querySelectorAll('.tile').forEach((tile,i)=>{const category=['Избранное','Чертежи','Сборки','Лазер'][i];tile.classList.toggle('active',i===0?section===null:section===category);tile.querySelector('small').textContent=macroCount(macros.filter(m=>i===0?m.favorite:m.category===category).length)});const visible=macros.filter(m=>(!section||m.category===section)&&(!home||m.favorite)&&m.name.toLowerCase().includes(query));const rows=document.getElementById('rows');rows.replaceChildren();visible.forEach(m=>{const row=document.createElement('div');row.className='macro-row';const star=document.createElement('button');star.className='row-star';star.innerHTML='<svg viewBox="0 0 24 24" style="fill:'+(m.favorite?'#F3B28A':'none')+'"><path d="m12 3 2.7 5.5 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9Z"/></svg>';star.title=(m.favorite?'Убрать из избранного: ':'В избранное: ')+m.name;star.onclick=()=>{m.favorite=!m.favorite;render()};const name=document.createElement('button');name.className='macro-name'+(selected===m?' selected':'');const title=document.createElement('span');title.textContent=m.name;name.append(title);if(home){const subtitle=document.createElement('small');subtitle.textContent=m.category;name.append(subtitle)}name.onclick=()=>{selected=m;render()};const play=document.createElement('button');play.className='row-play';play.title='Запустить: '+m.name;play.innerHTML='<svg viewBox="0 0 24 24"><path d="m8 4 12 8-12 8Z"/></svg>';play.onclick=()=>openEntry(m);row.append(star,name,play);rows.append(row)});document.getElementById('empty').style.display=visible.length?'none':'block';document.getElementById('empty').textContent=home?'Нажмите ☆ рядом с макросом в разделе, чтобы добавить его в избранное.':'Макросов пока нет. Измените запрос или раздел.'}
+function render(){const query=document.querySelector('input').value.trim().toLowerCase();const home=!section&&!query;document.getElementById('heading').textContent=home?'Избранные инструменты':query?'Результаты поиска':section;document.querySelectorAll('.tile').forEach((tile,i)=>{const category=['Избранное','Чертежи','Сборки','Лазер'][i];tile.classList.toggle('active',i===0?section===null:section===category);tile.querySelector('small').textContent=macroCount(macros.filter(m=>i===0?m.favorite:m.category===category).length)});const visible=macros.filter(m=>(!section||m.category===section)&&(!home||m.favorite)&&m.name.toLowerCase().includes(query));const rows=document.getElementById('rows');rows.replaceChildren();visible.forEach(m=>{const row=document.createElement('div');row.className='macro-row';const star=document.createElement('button');star.className='row-star';star.innerHTML='<svg viewBox="0 0 24 24" style="fill:'+(m.favorite?'#F3B28A':'none')+'"><path d="m12 3 2.7 5.5 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9Z"/></svg>';star.title=(m.favorite?'Убрать из избранного: ':'В избранное: ')+m.name;star.onclick=()=>{m.favorite=!m.favorite;render()};const name=document.createElement('button');name.className='macro-name'+(selected===m?' selected':'');const title=document.createElement('span');title.textContent=m.name;name.append(title);if(home||query){const subtitle=document.createElement('small');subtitle.textContent=m.category;name.append(subtitle)}name.onclick=()=>{selected=m;render()};const play=document.createElement('button');play.className='row-play';play.title='Запустить: '+m.name;play.innerHTML='<svg viewBox="0 0 24 24"><path d="m8 4 12 8-12 8Z"/></svg>';play.onclick=()=>openEntry(m);row.append(star,name,play);rows.append(row)});document.getElementById('empty').style.display=visible.length?'none':'block';document.getElementById('empty').textContent=home?'Нажмите ☆ рядом с макросом в разделе, чтобы добавить его в избранное.':'Макросов пока нет. Измените запрос или раздел.'}
 
 let entryMethods={};
 function updateProcedures(){const control=document.getElementById('entry-procedure');control.replaceChildren(...entryMethods[document.getElementById('entry-module').value].map(name=>new Option(name,name)))}
@@ -105,25 +105,25 @@ new ResizeObserver(()=>app.style.setProperty('--s',Math.max(.8,Math.min(1.5,app.
 .table-scroll{height:306px;overflow-y:auto;border:1px solid #E3DCCF;border-radius:12px;background:#F8F3E8;scrollbar-color:#C5BCAF #F8F3E8;scrollbar-width:thin}
 #hotkeys table{width:100%;border-collapse:separate;border-spacing:0;table-layout:fixed}#hotkeys th{text-align:left;padding:13px 16px;background:#F0E7D8;position:sticky;top:0;z-index:1;font-size:18px;border-bottom:1px solid #E3DCCF}#hotkeys th:first-child{width:51%}
 #hotkeys td{padding:12px 16px;border-bottom:1px solid #E3DCCF;font-size:18px;vertical-align:middle}#hotkeys td small{display:block;font:400 15px 'Source Sans 3';color:#706D61;margin-top:3px}
-.key-field{display:flex;gap:6px;align-items:center}#hotkeys input{width:100%;min-width:0;border:1px solid #E3DCCF;border-radius:9px;background:#FDFCF8;color:#24231F;padding:10px 12px;font:400 17px 'Source Sans 3';outline:none}#hotkeys input::placeholder{color:#706D61}#hotkeys input:focus{border-color:#C6532E;box-shadow:0 0 0 3px #C6532E12}#hotkeys input.invalid{border-color:#B33E29;background:#FFF3ED}#hotkeys .clear{border:0;background:transparent;color:#706D61;padding:0 2px;font-size:22px}
+.key-field{display:flex;gap:6px;align-items:center}#hotkeys input{width:100%;min-width:0;border:1px solid #E3DCCF;border-radius:9px;background:#FDFCF8;color:#24231F;padding:10px 12px;font:400 17px 'Source Sans 3';outline:none}#hotkeys input::placeholder{color:#706D61}#hotkeys input:focus{border-color:#F06424;box-shadow:0 0 0 3px #F0642412}#hotkeys input.invalid{border-color:#B33E29;background:#FFF3ED}#hotkeys .clear{border:0;background:transparent;color:#706D61;padding:0 2px;font-size:22px}
 #hotkeys .notice{min-height:64px;margin-top:16px;padding:11px 14px;border:1px solid #E3DCCF;border-radius:10px;color:#706D61;background:#F8F3E8;font:400 16px/1.35 'Source Sans 3'}#hotkeys .notice.error{color:#963B25;background:#FFF0E8;border-color:#E0AC96}#hotkeys .notice strong{font-size:16px;font-weight:700}
-#hotkeys .footnote{font-size:15px;color:#706D61;margin:12px 0 0}#hotkeys .entry-buttons{border-top:1px solid #E3DCCF;padding-top:18px;margin-top:18px}#hotkeys .primary{background:#C6532E;border-color:#C6532E;color:white}#hotkeys button:disabled{opacity:.4;cursor:default}
+#hotkeys .footnote{font-size:15px;color:#706D61;margin:12px 0 0}#hotkeys .entry-buttons{border-top:1px solid #E3DCCF;padding-top:18px;margin-top:18px}#hotkeys .primary{background:#F06424;border-color:#F06424;color:white}#hotkeys button:disabled{opacity:.4;cursor:default}
 @media(max-width:600px){#hotkeys{padding:18px}#hotkeys td,#hotkeys th{padding:10px 8px}#hotkeys input{font-size:15px;padding:9px 6px}#hotkeys td{font-size:16px}.table-scroll{height:280px}}
 </style>
 <dialog id="hotkeys" aria-labelledby="hk-title"><div class="dialog-head"><h2 id="hk-title">Горячие клавиши</h2><button class="close" aria-label="Закрыть">×</button></div>
 <p>Нажмите поле напротив макроса и введите сочетание клавиш.</p>
 <div class="table-scroll" tabindex="0" aria-label="Таблица горячих клавиш"><table><thead><tr><th scope="col">Макрос</th><th scope="col">Горячая клавиша</th></tr></thead><tbody id="hk-rows"></tbody></table></div>
 <div id="hk-message" class="notice" role="status">Используйте Ctrl, Alt или Shift вместе с буквой, цифрой или F-клавишей.</div>
-<p class="footnote">Сочетания работают, пока SW Tools Hub открыт.</p>
+<p class="footnote">Сочетания работают, пока SW-Assistant открыт.</p>
 <div class="entry-buttons"><button id="hk-cancel">Отмена</button><button id="hk-save" class="primary" disabled>Сохранить</button></div></dialog>
 <script>
 const hk=document.getElementById('hotkeys'),message=document.getElementById('hk-message'),save=document.getElementById('hk-save');
 const items=[['frame','Авторазмер Рамы','Чертежи'],['merge','Объединение чертежей','Чертежи']];
 let bindings={frame:'Shift + R'},draft={},dirty=false,invalid=new Map();
-const toolbar=document.createElement('button');toolbar.id='shortcut-toolbar';toolbar.title='Горячие клавиши';toolbar.setAttribute('aria-label','Горячие клавиши');toolbar.style.color='#C6532E';toolbar.innerHTML='<svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M6 9h.1M10 9h.1M14 9h.1M18 9h.1M6 12h.1M10 12h.1M14 12h.1M18 12h.1M7 16h10"/></svg>';document.querySelector('.toolbar').prepend(toolbar);
+const toolbar=document.createElement('button');toolbar.id='shortcut-toolbar';toolbar.title='Горячие клавиши';toolbar.setAttribute('aria-label','Горячие клавиши');toolbar.style.color='#F06424';toolbar.innerHTML='<svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M6 9h.1M10 9h.1M14 9h.1M18 9h.1M6 12h.1M10 12h.1M14 12h.1M18 12h.1M7 16h10"/></svg>';document.querySelector('.toolbar').prepend(toolbar);
 function validate(){invalid.clear();const seen={};for(const input of hk.querySelectorAll('input')){input.classList.remove('invalid');input.removeAttribute('aria-invalid');const value=input.value;if(!value)continue;if(seen[value]){invalid.set(input.dataset.id,seen[value]);input.classList.add('invalid');input.setAttribute('aria-invalid','true');}else seen[value]=input.dataset.id;}save.disabled=!dirty||invalid.size>0;message.className='notice'+(invalid.size?' error':'');if(invalid.size){const [id,other]=[...invalid][0];message.replaceChildren();const strong=document.createElement('strong');strong.textContent=draft[id]+' уже назначено: '+items.find(x=>x[0]===other)[1]+'.';message.append(strong,document.createElement('br'),'Выберите другое сочетание. Сохранение заблокировано.');}else message.textContent='Используйте Ctrl, Alt или Shift вместе с буквой, цифрой или F-клавишей.';}
-function render(){const rows=document.getElementById('hk-rows');rows.replaceChildren();for(const [id,name,category] of items){const tr=document.createElement('tr'),td=document.createElement('td'),key=document.createElement('td'),group=document.createElement('div'),input=document.createElement('input'),clear=document.createElement('button'),small=document.createElement('small');small.textContent=category;td.append(name,small);group.className='key-field';input.readOnly=true;input.value=draft[id]||'';input.dataset.id=id;input.placeholder='выберете сочетание';input.setAttribute('aria-label','Горячая клавиша: '+name);input.onkeydown=e=>{if(['Tab','Escape'].includes(e.key))return;e.preventDefault();if(['Control','Alt','Shift','Meta'].includes(e.key))return;if(!(e.ctrlKey||e.altKey||e.shiftKey)||e.metaKey||!/^(Key[A-Z]|Digit[0-9]|F([1-9]|1[0-9]|2[0-4]))$/.test(e.code)){message.className='notice error';message.textContent='Добавьте Ctrl, Alt или Shift к букве, цифре или F-клавише.';return;}input.value=[e.ctrlKey?'Ctrl':null,e.altKey?'Alt':null,e.shiftKey?'Shift':null,e.code.replace(/^Key|^Digit/,'')].filter(Boolean).join(' + ');draft[id]=input.value;dirty=true;validate();};clear.className='clear';clear.textContent='×';clear.setAttribute('aria-label','Удалить сочетание: '+name);clear.onclick=()=>{delete draft[id];input.value='';dirty=true;validate();input.focus();};group.append(input,clear);key.append(group);tr.append(td,key);rows.append(tr);}}
-toolbar.onclick=()=>{draft={...bindings};dirty=false;render();validate();hk.showModal();};save.onclick=()=>{validate();if(invalid.size||!dirty)return;bindings={...draft};hk.close();};document.getElementById('hk-cancel').onclick=()=>hk.close();hk.querySelector('.close').onclick=()=>hk.close();
+function renderHotkeyRows(){const rows=document.getElementById('hk-rows');rows.replaceChildren();for(const [id,name,category] of items){const tr=document.createElement('tr'),td=document.createElement('td'),key=document.createElement('td'),group=document.createElement('div'),input=document.createElement('input'),clear=document.createElement('button'),small=document.createElement('small');small.textContent=category;td.append(name,small);group.className='key-field';input.readOnly=true;input.value=draft[id]||'';input.dataset.id=id;input.placeholder='выберете сочетание';input.setAttribute('aria-label','Горячая клавиша: '+name);input.onkeydown=e=>{if(['Tab','Escape'].includes(e.key))return;e.preventDefault();if(['Control','Alt','Shift','Meta'].includes(e.key))return;if(!(e.ctrlKey||e.altKey||e.shiftKey)||e.metaKey||!/^(Key[A-Z]|Digit[0-9]|F([1-9]|1[0-9]|2[0-4]))$/.test(e.code)){message.className='notice error';message.textContent='Добавьте Ctrl, Alt или Shift к букве, цифре или F-клавише.';return;}input.value=[e.ctrlKey?'Ctrl':null,e.altKey?'Alt':null,e.shiftKey?'Shift':null,e.code.replace(/^Key|^Digit/,'')].filter(Boolean).join(' + ');draft[id]=input.value;dirty=true;validate();};clear.className='clear';clear.textContent='×';clear.setAttribute('aria-label','Удалить сочетание: '+name);clear.onclick=()=>{delete draft[id];input.value='';dirty=true;validate();input.focus();};group.append(input,clear);key.append(group);tr.append(td,key);rows.append(tr);}}
+toolbar.onclick=()=>{draft={...bindings};dirty=false;renderHotkeyRows();validate();hk.showModal();};save.onclick=()=>{validate();if(invalid.size||!dirty)return;bindings={...draft};hk.close();};document.getElementById('hk-cancel').onclick=()=>hk.close();hk.querySelector('.close').onclick=()=>hk.close();
 </script>
 
 <style>
@@ -142,4 +142,38 @@ toolbar.onclick=()=>{draft={...bindings};dirty=false;render();validate();hk.show
 @media(max-width:600px){#hotkeys{padding:16px}#hotkeys td,#hotkeys th{padding-left:8px;padding-right:8px}#hotkeys td{font-size:15px}#hotkeys input{font-size:15px}}
 </style>
 
+<style>
+button:focus-visible{outline:none;box-shadow:none}
+.toolbar button:focus-visible::before,.row-play:focus-visible::before,.row-star:focus-visible::before{background:#F6E8DA;border-color:#F06424}
+.macro-name small{font-size:15px;font-weight:400;margin-top:4px}
+</style>
+
+<style>
+.search,.tile,.content{background:#FDFCF8}
+.tile.active{background:#FDFCF8;border-color:#E3DCCF}
+.toolbar button::before,.row-star::before,.row-play::before{background:#FDFCF8}
+.macro-name:hover,.macro-name.selected{background:#FDFCF8}
+.tile:hover{background:#F06424;color:#fff;border-color:#F06424}
+.toolbar button:hover::before,.row-play:hover::before{background:#F06424;border-color:#F06424}
+.row-star:hover::before{background:#FDFCF8;border-color:#F06424}
+.toolbar button:focus-visible::before,.row-play:focus-visible::before,.row-star:focus-visible::before{background:#FDFCF8;border-color:#F06424}
+</style>
+
+<style>
+.row-star svg{width:calc(17px * var(--s));height:calc(17px * var(--s))}
+.row-star::before{inset:calc(9px * var(--s))}
+</style>
+
+<style>
+.toolbar button::before,.row-star::before,.row-play::before{display:none}
+.toolbar button,.row-star,.row-play{border:0;box-shadow:none;background:transparent!important;color:#F06424}
+.toolbar button:hover,.row-star:hover,.row-play:hover{color:#F06424}
+.toolbar button:hover svg,.row-play:hover svg,.row-star:hover svg{transform:scale(1.2)}
+.row-star svg{transition:transform .10s ease .06s}
+</style>
+
+<style>
+.tile svg,.toolbar button svg,.row-star svg,.row-play svg{width:calc(20.4px * var(--s));height:calc(20.4px * var(--s))}
+</style>
+<style>.brand-icon{display:inline-flex;vertical-align:middle;color:#F06424}.brand-icon svg{width:18px;height:18px;stroke-width:1.5}</style>
 </body></html>

@@ -118,7 +118,7 @@ namespace SWToolsHub.Portable
                 rows.MinimumSize = new Size(width, 0); rows.MaximumSize = new Size(width, 0); rows.Width = width; };
             viewport.SizeChanged += (s, e) => fit(); Shown += (s, e) => fit();
             layout.Controls.Add(viewport, 0, 3); layout.Controls.Add(notice, 0, 4);
-            layout.Controls.Add(new Label { Text = "Сочетания работают, пока SW Tools Hub открыт.", Font = regular, ForeColor = UiTheme.Muted, Dock = DockStyle.Fill }, 0, 5);
+            layout.Controls.Add(new Label { Text = "Сочетания работают, пока SW-Assistant открыт.", Font = regular, ForeColor = UiTheme.Muted, Dock = DockStyle.Fill }, 0, 5);
             var buttons = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.RightToLeft };
             var cancel = new RoundedButton { Text = "Отмена", DialogResult = DialogResult.Cancel, AutoSize = true };
             StyleButton(cancel); StyleButton(save); save.BackColor = UiTheme.AccentInk; save.ForeColor = Color.White; save.AccentHover = true;

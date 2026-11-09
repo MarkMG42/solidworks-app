@@ -13,19 +13,19 @@ namespace SWToolsHub.Portable
     internal static class UiTheme
     {
         public static readonly Color Background = Color.FromArgb(253, 252, 248);
-        public static readonly Color Surface = Color.FromArgb(248, 243, 232);
+        public static readonly Color Surface = Color.FromArgb(253, 252, 248);
         public static readonly Color Text = Color.FromArgb(36, 35, 31);
         public static readonly Color Muted = Color.FromArgb(112, 109, 97);
-        public static readonly Color Card = Color.FromArgb(248, 243, 232);
-        public static readonly Color Selected = Color.FromArgb(240, 231, 216);
+        public static readonly Color Card = Color.FromArgb(253, 252, 248);
+        public static readonly Color Selected = Color.FromArgb(253, 252, 248);
         public static readonly Color Accent = Color.FromArgb(112, 109, 97);
         public static readonly Color OnCard = Color.FromArgb(36, 35, 31);
         public static readonly Color Border = Color.FromArgb(227, 220, 207);
         public static readonly Color IconInk = Color.FromArgb(112, 109, 97);
-        public static readonly Color IconSurface = Color.FromArgb(252, 247, 240);
+        public static readonly Color IconSurface = Color.FromArgb(253, 252, 248);
         public static readonly Color IconBorder = Color.FromArgb(222, 199, 177);
-        public static readonly Color IconHover = Color.FromArgb(246, 232, 218);
-        public static readonly Color AccentInk = Color.FromArgb(198, 83, 46);
+        public static readonly Color IconHover = Color.FromArgb(253, 252, 248);
+        public static readonly Color AccentInk = Color.FromArgb(240, 100, 36);
         public static readonly Color AccentFill = Color.FromArgb(243, 178, 138);
         private static readonly PrivateFontCollection fonts = new PrivateFontCollection();
         private static readonly List<string> fontPaths = new List<string>();
@@ -94,8 +94,8 @@ namespace SWToolsHub.Portable
         private bool hoverReady;
         private bool stopping;
         private float hoverProgress;
-        private readonly Timer hoverDelay = new Timer { Interval = 90 };
-        private readonly Timer hoverAnimation = new Timer { Interval = 15 };
+        private readonly Timer hoverDelay = new Timer { Interval = 60 };
+        private readonly Timer hoverAnimation = new Timer { Interval = 10 };
         public RoundedButton()
         {
             DoubleBuffered = true; ResizeRedraw = true;
@@ -125,20 +125,20 @@ namespace SWToolsHub.Portable
             bool card = BackColor.ToArgb() == UiTheme.Card.ToArgb() || BackColor.ToArgb() == UiTheme.Selected.ToArgb();
             float progress = Enabled ? hoverProgress : 0;
             float accentProgress = AccentHover ? progress : 0;
-            bool accentActive = accentProgress > 0;
+            bool accentActive = accentProgress > 0 && !IconOnly;
             var hoverColor = AccentHover ? UiTheme.AccentInk : IconOnly ? UiTheme.IconHover : card ? UiTheme.Selected : UiTheme.Background;
             float available = Math.Max(1, Math.Min(Width, Height) - 2);
             float diameter = Math.Min(available, Math.Max(1, Math.Min(Width, Height) * (36f / 46f) - 2) * (1 + .2f * accentProgress));
             var shapeBounds = IconOnly ? new RectangleF((Width - diameter) / 2, (Height - diameter) / 2, diameter, diameter) : new RectangleF(1, 1, Width - 2, Height - 2);
             using (var path = UiTheme.Shape(shapeBounds, IconOnly ? diameter / 2 : 16))
             using (var fill = new SolidBrush(UiTheme.Blend(BackColor, hoverColor, progress)))
-            using (var pen = new Pen(UiTheme.Blend(Focused ? UiTheme.IconInk : IconOnly ? UiTheme.IconBorder : UiTheme.Border, UiTheme.AccentInk, accentProgress), Focused ? 2 : 1)) {
-                e.Graphics.FillPath(fill, path); if (!Borderless || Focused) e.Graphics.DrawPath(pen, path);
+            using (var pen = new Pen(UiTheme.Blend(UiTheme.Border, UiTheme.AccentInk, accentProgress), 1)) {
+                if (!IconOnly) { e.Graphics.FillPath(fill, path); if (!Borderless) e.Graphics.DrawPath(pen, path); }
             }
             int iconSpace = (int)Math.Round(IconSize) + 8;
             if (Image != null) {
                 int normalSize = Math.Max(1, Math.Min((int)Math.Round(IconSize), Math.Min(Width, Height) - 8));
-                int size = accentActive ? Math.Min(Math.Min(Width, Height) - 6, (int)Math.Round(normalSize * (1 + .2f * accentProgress))) : normalSize;
+                int size = AccentHover && progress > 0 ? Math.Min(Math.Min(Width, Height) - 6, (int)Math.Round(normalSize * (1 + .2f * accentProgress))) : normalSize;
                 int x = LeadingIcon ? Padding.Left : (Width - size) / 2;
                 int y = LeadingIcon ? Math.Max(8, (Height - Font.Height * (string.IsNullOrEmpty(SecondaryText) ? 3 : 2) - 2) / 2) : (Height - size) / 2;
                 var target = new Rectangle(x, y, size, size);
@@ -163,7 +163,7 @@ namespace SWToolsHub.Portable
                 var detailBounds = new Rectangle(titleBounds.Left, titleBounds.Bottom + 2, titleBounds.Width, lineHeight);
                 var lineFlags = TextFormatFlags.Left | TextFormatFlags.SingleLine | TextFormatFlags.EndEllipsis;
                 TextRenderer.DrawText(e.Graphics, Text, Font, titleBounds, textColor, lineFlags);
-                using (var detailFont = new Font(Font.FontFamily, Math.Max(8, Font.Size - 1), Font.Style))
+                using (var detailFont = new Font(Font.FontFamily, Math.Max(8, Font.Size - 3), FontStyle.Regular))
                     TextRenderer.DrawText(e.Graphics, SecondaryText, detailFont, detailBounds, UiTheme.Blend(UiTheme.Muted, Color.White, accentProgress), lineFlags);
             } else TextRenderer.DrawText(e.Graphics, Text, Font, textBounds, textColor, flags);
         }

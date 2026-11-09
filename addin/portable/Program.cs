@@ -76,7 +76,9 @@ namespace SWToolsHub.Portable
         }
         public Hub()
         {
-            Text = "SW Tools Hub";
+            Text = "SW-Assistant";
+            using (var stream = typeof(Hub).Assembly.GetManifestResourceStream("AppIcon.ico"))
+            using (var icon = new Icon(stream)) Icon = (Icon)icon.Clone();
             AutoScaleMode = AutoScaleMode.Dpi;
             ClientSize = new Size(900, 600); MinimumSize = new Size(480, 320);
             StartPosition = FormStartPosition.CenterScreen;
@@ -88,7 +90,7 @@ namespace SWToolsHub.Portable
             header = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 3, RowCount = 1, Padding = new Padding(20, 12, 16, 12) };
             header.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
             for (int i = 0; i < 2; i++) header.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, Px(52)));
-            var brand = new Label { Text = "SW Tools Hub", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft, Font = titleFont };
+            var brand = new Label { Text = "SW-Assistant", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft, Font = titleFont };
             var choose = MakeButton("");
             ConfigureIcon(choose, "folder", "Выбрать корневую папку библиотеки");
             var shortcuts = MakeButton("");
@@ -156,8 +158,8 @@ namespace SWToolsHub.Portable
         }
         private void ConfigureIcon(Button button, string icon, string description)
         {
-            StyleButton(button); ((RoundedButton)button).IconOnly = true; ((RoundedButton)button).AccentHover = icon == "play" || icon == "folder" || icon == "keyboard"; button.BackColor = UiTheme.IconSurface; button.ForeColor = UiTheme.IconInk; button.Text = ""; button.Dock = DockStyle.Fill;
-            ((RoundedButton)button).IconSize = Px(24);
+            StyleButton(button); ((RoundedButton)button).IconOnly = true; ((RoundedButton)button).AccentHover = true; button.BackColor = UiTheme.IconSurface; button.ForeColor = UiTheme.IconInk; button.Text = ""; button.Dock = DockStyle.Fill;
+            ((RoundedButton)button).IconSize = Px(20.4f);
             button.Margin = new Padding(Px(2)); button.Padding = new Padding(0);
             button.Image = DrawIcon(icon); button.ImageAlign = ContentAlignment.MiddleCenter;
             button.AccessibleName = description; tips.SetToolTip(button, description);
@@ -243,7 +245,7 @@ namespace SWToolsHub.Portable
                 for (int i = 1; i < header.ColumnStyles.Count; i++) header.ColumnStyles[i].Width = Px(52);
                 foreach (var button in header.Controls.OfType<RoundedButton>()) {
                     button.Dock = DockStyle.None; button.Anchor = AnchorStyles.None;
-                    button.Size = new Size(Px(46), Px(46)); button.IconSize = Px(24); button.Margin = new Padding(Px(2));
+                    button.Size = new Size(Px(46), Px(46)); button.IconSize = Px(20.4f); button.Margin = new Padding(Px(2));
                 }
                 searchBox.Padding = Space(12, 12, 12, 8); searchBox.Margin = Space(20, 0, 20, 8);
                 heading.Padding = Space(20, 0, 0, 0);
@@ -258,7 +260,7 @@ namespace SWToolsHub.Portable
                 shell.ResumeLayout(true);
                 int visibleCount = VisibleMacros().Length;
                 bool home = section == null && string.IsNullOrWhiteSpace(search.Text);
-                int listHeight = Px(44) + (visibleCount == 0 ? Px(100) : visibleCount * (Px(home ? 84 : 68) + Px(4)));
+                int listHeight = Px(44) + (visibleCount == 0 ? Px(100) : visibleCount * (Px(home || !string.IsNullOrWhiteSpace(search.Text) ? 84 : 68) + Px(4)));
                 if (home && macros.Any(m => m.category == "Без раздела")) listHeight += Px(48);
                 int frameHeight = Math.Max(Px(240), listHeight + libraryFrame.Padding.Vertical + libraryFrame.Margin.Vertical);
                 shell.RowStyles[4].SizeType = SizeType.Absolute;
@@ -295,7 +297,7 @@ namespace SWToolsHub.Portable
                 var tile = MakeButton(module);
                 ((RoundedButton)tile).SecondaryText = MacroCount(macros.Count(m => favoritesView ? settings.Favorites.Contains(m.id, StringComparer.OrdinalIgnoreCase) : m.category == module));
                 ((RoundedButton)tile).AccentHover = true;
-                tile.Image = DrawIcon(symbols[i]); ((RoundedButton)tile).LeadingIcon = true; ((RoundedButton)tile).IconSize = Px(24);
+                tile.Image = DrawIcon(symbols[i]); ((RoundedButton)tile).LeadingIcon = true; ((RoundedButton)tile).IconSize = Px(20.4f);
                 tile.Disposed += (s, e) => tile.Image.Dispose();
                 tile.Dock = DockStyle.Fill; tile.Margin = new Padding(Px(4)); tile.AccessibleName = module;
                 if (favoritesView ? section == null : section == module) tile.BackColor = UiTheme.Selected;
@@ -308,7 +310,7 @@ namespace SWToolsHub.Portable
             content.Controls.Add(new Label { Text = title, Margin = new Padding(0), Width = width, Height = Px(44), TextAlign = ContentAlignment.MiddleLeft, Font = titleFont });
             var visible = VisibleMacros();
             foreach (var macro in visible) {
-                var row = new TableLayoutPanel { Width = width, Height = Px(home ? 84 : 68), ColumnCount = 3, RowCount = 1, Margin = Space(0, 0, 0, 4) };
+                var row = new TableLayoutPanel { Width = width, Height = Px(home || !string.IsNullOrWhiteSpace(search.Text) ? 84 : 68), ColumnCount = 3, RowCount = 1, Margin = Space(0, 0, 0, 4) };
                 row.Paint += (s, e) => { using (var pen = new Pen(UiTheme.Border)) e.Graphics.DrawLine(pen, 0, row.Height - 1, row.Width, row.Height - 1); };
                 row.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, Px(52))); row.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100)); row.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, Px(52)));
                 bool favorite = settings.Favorites.Contains(macro.id, StringComparer.OrdinalIgnoreCase);
@@ -324,7 +326,7 @@ namespace SWToolsHub.Portable
                 };
                 var name = MakeButton(macro.name);
                 ((RoundedButton)name).Borderless = true;
-                if (home) ((RoundedButton)name).SecondaryText = macro.category;
+                if (home || searching) ((RoundedButton)name).SecondaryText = macro.category;
                 name.Dock = DockStyle.Fill; name.AutoEllipsis = true;
                 if (selectedMacro?.id == macro.id) name.BackColor = UiTheme.Selected;
                 name.Click += (s, e) => { selectedMacro = macro; status.Text = "Выбран: " + macro.name; RenderLibrary(); };
@@ -398,7 +400,7 @@ namespace SWToolsHub.Portable
             }
             base.WndProc(ref m);
         }
-        private void ShowError(string text) { status.Text = text; MessageBox.Show(this, text, "SW Tools Hub", MessageBoxButtons.OK, MessageBoxIcon.Warning); }
+        private void ShowError(string text) { status.Text = text; MessageBox.Show(this, text, "SW-Assistant", MessageBoxButtons.OK, MessageBoxIcon.Warning); }
         private void RunSelected(Macro selected, bool chooseEntry = false)
         {
             if (busy) return;
