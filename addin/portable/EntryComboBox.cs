@@ -56,7 +56,7 @@ namespace SWToolsHub.Portable
             graphics.SmoothingMode = SmoothingMode.AntiAlias;
             using (var fill = new SolidBrush(BackColor)) graphics.FillRectangle(fill, Width - Px(44), 0, Px(44), Height);
             using (var erase = new Pen(BackColor, Px(3))) graphics.DrawRectangle(erase, 0, 0, Width - 1, Height - 1);
-            using (var frame = UiTheme.Shape(new RectangleF(.5f, .5f, Width - 1, Height - 1), Px(8)))
+            using (var frame = UiTheme.Shape(new RectangleF(.5f, .5f, Width - 1, Height - 1), Px(UiTheme.ControlRadius)))
             using (var pen = new Pen(Enabled && (hovered || Focused || expanded) ? UiTheme.AccentInk : UiTheme.Border)) graphics.DrawPath(pen, frame);
             float x = Width - Px(24), y = Height / 2f, direction = expanded ? -1 : 1;
             using (var pen = new Pen(Enabled ? (hovered || expanded ? UiTheme.AccentInk : UiTheme.Muted) : SystemColors.GrayText, 1.4f * DeviceDpi / 96f)) {

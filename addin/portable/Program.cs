@@ -83,7 +83,7 @@ namespace SWToolsHub.Portable
             AutoScaleMode = AutoScaleMode.Dpi;
             ClientSize = new Size(900, 600); MinimumSize = new Size(480, 320);
             StartPosition = FormStartPosition.CenterScreen;
-            Font = UiTheme.CreateFont(); titleFont = (Font)Font.Clone(); BackColor = Background; ForeColor = Foreground;
+            Font = UiTheme.CreateFont(); titleFont = UiTheme.CreateSemiBoldFont(); BackColor = Background; ForeColor = Foreground;
             shell = new TableLayoutPanel { ColumnCount = 1, RowCount = 5, Padding = new Padding(0) };
             shell.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
             foreach (var height in new[] { 76, 56, 30, 120 }) shell.RowStyles.Add(new RowStyle(SizeType.Absolute, height));

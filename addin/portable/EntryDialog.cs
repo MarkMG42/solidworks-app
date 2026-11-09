@@ -17,7 +17,7 @@ namespace SWToolsHub.Portable
             StartPosition = FormStartPosition.CenterParent;
             AutoScaleMode = AutoScaleMode.Dpi;
             ClientSize = new Size(640, 520); MinimumSize = SizeFromClientSize(new Size(560, 500));
-            var layout = new TableLayoutPanel { Dock = DockStyle.Fill, Padding = new Padding(12), ColumnCount = 1, RowCount = 7 };
+            var layout = new TableLayoutPanel { Dock = DockStyle.Fill, Padding = new Padding(20), ColumnCount = 1, RowCount = 7 };
             layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
             foreach (var height in new[] { 88, 32, 42, 32, 42, 74, 54 }) layout.RowStyles.Add(new RowStyle(SizeType.Absolute, height));
             var info = new Label { Dock = DockStyle.Fill, AutoEllipsis = true };
@@ -59,7 +59,8 @@ namespace SWToolsHub.Portable
             layout.Controls.Add(module, 0, 2); layout.Controls.Add(new Label { Text = "Инструмент / процедура", Dock = DockStyle.Fill }, 0, 3);
             layout.Controls.Add(procedure, 0, 4); layout.Controls.Add(reload, 0, 5); layout.Controls.Add(buttons, 0, 6);
             foreach (var field in new[] { module, procedure }) { field.BackColor = UiTheme.Surface; field.ForeColor = ForeColor; field.FlatStyle = FlatStyle.Flat; }
-            foreach (var button in new[] { reload, confirm, cancel }) { button.FlatStyle = FlatStyle.Flat; button.FlatAppearance.BorderSize = 0; button.BackColor = UiTheme.Card; button.ForeColor = UiTheme.OnCard; }
+            foreach (var button in new[] { reload, cancel }) UiTheme.StyleAction(button);
+            UiTheme.StyleAction(confirm, true);
             Controls.Add(layout); AcceptButton = confirm; CancelButton = cancel;
             Shown += (s, e) => load();
         }

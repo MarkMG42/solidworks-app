@@ -34,19 +34,35 @@ namespace SWToolsHub.Portable
         [DllImport("gdi32.dll", CharSet = CharSet.Unicode)] private static extern bool RemoveFontResourceEx(string file, uint flags, IntPtr reserved);
         public static void Initialize()
         {
-            foreach (var file in new[] { "SourceSans3-Bold.ttf", "SourceSans3-Regular.ttf" }) {
+            foreach (var file in new[] { "SourceSans3-Regular.ttf", "SourceSans3-Semibold.ttf" }) {
                 var path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Fonts", file);
                 if (File.Exists(path)) { AddFontResourceEx(path, 0x10, IntPtr.Zero); fonts.AddFontFile(path); fontPaths.Add(path); }
             }
         }
-        public static Font CreateFont() => fonts.Families.Length > 0
-            ? new Font(fonts.Families[0], 14f, FontStyle.Bold)
-            : new Font("Segoe UI", 14f, FontStyle.Bold);
+        public const int ControlHeight = 42, RowHeight = 56, ControlRadius = 10;
+        public static Font CreateFont() => CreateRegularFont();
         public static Font CreateRegularFont()
         {
             foreach (var family in fonts.Families)
-                if (family.IsStyleAvailable(FontStyle.Regular)) return new Font(family, 14f, FontStyle.Regular);
+                if (family.Name == "Source Sans 3" && family.IsStyleAvailable(FontStyle.Regular)) return new Font(family, 14f, FontStyle.Regular);
             return new Font("Segoe UI", 14f, FontStyle.Regular);
+        }
+        public static Font CreateSemiBoldFont()
+        {
+            foreach (var family in fonts.Families)
+                if (family.Name.IndexOf("Semibold", StringComparison.OrdinalIgnoreCase) >= 0) return new Font(family, 14f, FontStyle.Regular);
+            return new Font("Segoe UI Semibold", 14f, FontStyle.Regular);
+        }
+        public static void StyleAction(RoundedButton button, bool primary = false)
+        {
+            var ownedFont = primary ? CreateSemiBoldFont() : CreateRegularFont();
+            button.Font = ownedFont; button.Disposed += (s, e) => ownedFont.Dispose();
+            button.FlatStyle = FlatStyle.Flat; button.FlatAppearance.BorderSize = 0;
+            button.BackColor = primary ? AccentInk : Background; button.ForeColor = primary ? Color.White : Text;
+            button.Cursor = Cursors.Hand; button.AccentHover = true; button.CornerRadius = ControlRadius;
+            button.Padding = new Padding(16, 8, 16, 8); button.Margin = new Padding(4);
+            button.AutoSize = false; button.TextAlign = ContentAlignment.MiddleCenter;
+            button.Size = new Size(Math.Max(112, TextRenderer.MeasureText(button.Text, ownedFont).Width + 32), ControlHeight);
         }
         public static void Shutdown()
         {
@@ -73,12 +89,13 @@ namespace SWToolsHub.Portable
     internal sealed class RoundedPanel : Panel
     {
         public Color BorderColor { get; set; } = UiTheme.Border;
+        public int CornerRadius { get; set; } = 16;
         public RoundedPanel() { DoubleBuffered = true; ResizeRedraw = true; }
         protected override void OnPaintBackground(PaintEventArgs e)
         {
             e.Graphics.Clear(Parent?.BackColor ?? BackColor);
             e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
-            using (var path = UiTheme.Shape(new RectangleF(.5f, .5f, Width - 1, Height - 1), 16))
+            using (var path = UiTheme.Shape(new RectangleF(.5f, .5f, Width - 1, Height - 1), CornerRadius))
             using (var fill = new SolidBrush(BackColor))
             using (var pen = new Pen(BorderColor, 1)) { e.Graphics.FillPath(fill, path); e.Graphics.DrawPath(pen, path); }
         }
@@ -86,6 +103,7 @@ namespace SWToolsHub.Portable
     internal sealed class RoundedButton : Button
     {
         public string SecondaryText { get; set; }
+        public int CornerRadius { get; set; } = 16;
         public float IconSize { get; set; } = 24;
         public bool IconOnly { get; set; }
         public bool AccentHover { get; set; } = true;
@@ -101,7 +119,7 @@ namespace SWToolsHub.Portable
             animationStart = hoverProgress; animationTarget = target;
             animationClock.Restart(); hoverAnimation.Start();
         }
-        private readonly Timer hoverDelay = new Timer { Interval = 60 };
+        private readonly Timer hoverDelay = new Timer { Interval = 40 };
         private readonly Timer hoverAnimation = new Timer { Interval = 10 };
         public RoundedButton()
         {
@@ -109,7 +127,7 @@ namespace SWToolsHub.Portable
             SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.UserPaint, true);
             hoverDelay.Tick += (s, e) => { hoverDelay.Stop(); if (hovered && Enabled) { AnimateTo(1); } };
             hoverAnimation.Tick += (s, e) => {
-                float t = Math.Min(1f, (float)animationClock.Elapsed.TotalMilliseconds / 140f);
+                float t = Math.Min(1f, (float)animationClock.Elapsed.TotalMilliseconds / 100f);
                 float eased = t * t * (3 - 2 * t);
                 hoverProgress = animationStart + (animationTarget - animationStart) * eased;
                 Invalidate(); if (t >= 1) { hoverAnimation.Stop(); animationClock.Stop(); }
@@ -139,7 +157,7 @@ namespace SWToolsHub.Portable
             float available = Math.Max(1, Math.Min(Width, Height) - 2);
             float diameter = Math.Min(available, Math.Max(1, Math.Min(Width, Height) * (36f / 46f) - 2));
             var shapeBounds = IconOnly ? new RectangleF((Width - diameter) / 2, (Height - diameter) / 2, diameter, diameter) : new RectangleF(1, 1, Width - 2, Height - 2);
-            using (var path = UiTheme.Shape(shapeBounds, IconOnly ? 8 : 16))
+            using (var path = UiTheme.Shape(shapeBounds, IconOnly ? 8 : CornerRadius))
             using (var fill = new SolidBrush(UiTheme.Blend(BackColor, hoverColor, progress)))
             using (var pen = new Pen(UiTheme.Blend(UiTheme.Border, UiTheme.AccentInk, accentProgress), 1)) {
                 if (!IconOnly || accentActive) e.Graphics.FillPath(fill, path);

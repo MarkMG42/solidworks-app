@@ -57,11 +57,11 @@ button:focus-visible{outline:2px solid #706D61;outline-offset:2px}
 .toolbar button::before,.row-star::before,.row-play::before{content:'';position:absolute;inset:calc(5px * var(--s));z-index:-1;border:1px solid #DEC7B1;border-radius:50%;background:#FCF7F0;transition:transform .10s ease,background-color .10s ease,border-color .10s ease}
 .toolbar button,.row-star,.row-play,.tile,.macro-name{transition:background-color .10s ease,color .10s ease,border-color .10s ease}
 .toolbar button svg,.row-play svg,.tile svg{transition:transform .10s ease,color .10s ease}
-.toolbar button:hover,.row-star:hover,.row-play:hover,.tile:hover,.macro-name:hover{transition-delay:.06s}
-.toolbar button:hover::before,.row-play:hover::before{background:#F06424;border-color:#F06424;transform:scale(1.2);transition-delay:.06s}
-.row-star:hover::before{background:#F6E8DA;transition-delay:.06s}
-.toolbar button:hover svg,.row-play:hover svg,.tile:hover svg{transition-delay:.06s}
-.tile small{transition:color .10s ease}.tile:hover small{transition-delay:.06s}
+.toolbar button:hover,.row-star:hover,.row-play:hover,.tile:hover,.macro-name:hover{transition-delay:.04s}
+.toolbar button:hover::before,.row-play:hover::before{background:#F06424;border-color:#F06424;transform:scale(1.2);transition-delay:.04s}
+.row-star:hover::before{background:#F6E8DA;transition-delay:.04s}
+.toolbar button:hover svg,.row-play:hover svg,.tile:hover svg{transition-delay:.04s}
+.tile small{transition:color .10s ease}.tile:hover small{transition-delay:.04s}
 dialog{width:min(560px,calc(100vw - 40px));padding:24px;border:1px solid #E3DCCF;border-radius:16px;background:#FDFCF8;color:#24231F;box-shadow:0 18px 70px #0003;font:inherit}
 dialog::backdrop{background:#24231F55}dialog h2{margin-bottom:12px}dialog p{font-size:16px;color:#706D61;margin:0 0 20px}dialog label{display:block;margin:12px 0 6px}dialog select{width:100%;padding:10px;font:inherit;border:1px solid #E3DCCF;border-radius:10px;background:#F8F3E8;color:#24231F}.entry-buttons{display:flex;justify-content:flex-end;gap:10px;margin-top:24px}.entry-buttons button{padding:10px 18px}
 
@@ -79,11 +79,12 @@ const macros=[{name:'Проверка чертежа',category:'Чертежи',
 let section=null, selected=null;
 function macroCount(value){const form=new Intl.PluralRules('ru').select(value);return value+' '+({one:'макрос',few:'макроса',many:'макросов',other:'макроса'}[form])}
 function show(title,button){if(title==='Избранное'){section=null;document.querySelector('input').value=''}else section=section===title?null:title;render()}
+
 function render(){const query=document.querySelector('input').value.trim().toLowerCase();const home=!section&&!query;document.getElementById('heading').textContent=home?'Избранные инструменты':query?'Результаты поиска':section;document.querySelectorAll('.tile').forEach((tile,i)=>{const category=['Избранное','Чертежи','Сборки','Лазер'][i];tile.classList.toggle('active',i===0?section===null:section===category);tile.querySelector('small').textContent=macroCount(macros.filter(m=>i===0?m.favorite:m.category===category).length)});const visible=macros.filter(m=>(!section||m.category===section)&&(!home||m.favorite)&&m.name.toLowerCase().includes(query));const rows=document.getElementById('rows');rows.replaceChildren();visible.forEach(m=>{const row=document.createElement('div');row.className='macro-row';const star=document.createElement('button');star.className='row-star';star.innerHTML='<svg viewBox="0 0 24 24" style="fill:'+(m.favorite?'#F3B28A':'none')+'"><path d="m12 3 2.7 5.5 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9Z"/></svg>';star.title=(m.favorite?'Убрать из избранного: ':'В избранное: ')+m.name;star.onclick=()=>{m.favorite=!m.favorite;render()};const name=document.createElement('button');name.className='macro-name'+(selected===m?' selected':'');const title=document.createElement('span');title.textContent=m.name;name.append(title);if(home||query){const subtitle=document.createElement('small');subtitle.textContent=m.category;name.append(subtitle)}name.onclick=()=>{selected=m;render()};const play=document.createElement('button');play.className='row-play';play.title='Запустить: '+m.name;play.innerHTML='<svg viewBox="0 0 24 24"><path d="m8 4 12 8-12 8Z"/></svg>';play.onclick=()=>openEntry(m);row.append(star,name,play);rows.append(row)});document.getElementById('empty').style.display=visible.length?'none':'block';document.getElementById('empty').textContent=home?'Нажмите ☆ рядом с макросом в разделе, чтобы добавить его в избранное.':'Макросов пока нет. Измените запрос или раздел.'}
 
 let entryMethods={};
 function updateProcedures(){const control=document.getElementById('entry-procedure');control.replaceChildren(...entryMethods[document.getElementById('entry-module').value].map(name=>new Option(name,name)))}
-function openEntry(m){selected=m;entryMethods=m.entries||(m.name==='Авторазмер Рамы'?{FrameCutListDimensionsV3:['main']}:{DXFExport:['main','exportSelected']});document.getElementById('entry-title').textContent=m.name;const modules=document.getElementById('entry-module');modules.replaceChildren(...Object.keys(entryMethods).map(name=>new Option(name,name)));updateProcedures();document.getElementById('entry-dialog').showModal()}
+function openEntry(m){selected=m;entryMethods=m.entries||(m.name==='Проверка чертежа'?{DrawingCheck:['main']}:{DXFExport:['main','exportSelected']});document.getElementById('entry-title').textContent=m.name;const modules=document.getElementById('entry-module');modules.replaceChildren(...Object.keys(entryMethods).map(name=>new Option(name,name)));updateProcedures();document.getElementById('entry-dialog').showModal()}
 document.querySelectorAll('dialog select').forEach(field=>{
  const placePicker=()=>{const box=field.getBoundingClientRect();field.style.setProperty('--picker-top',(box.bottom+6)+'px');field.style.setProperty('--picker-left',box.left+'px');field.style.setProperty('--picker-width',box.width+'px')};
  field.addEventListener('pointerdown',placePicker);field.addEventListener('keydown',placePicker);
@@ -176,4 +177,37 @@ button:focus-visible{outline:none;box-shadow:none}
 .tile svg,.toolbar button svg,.row-star svg,.row-play svg{width:calc(20.4px * var(--s));height:calc(20.4px * var(--s))}
 </style>
 <style>.brand-icon{display:inline-flex;vertical-align:middle;color:#F06424}.brand-icon svg{width:18px;height:18px;stroke-width:1.5}</style>
+<style>
+:root{--action-font:18.667px;--control-height:42px;--control-radius:10px;--control-padding:12px;--row-height:56px;--control-gap:8px}
+#hotkeys .entry-buttons button,#entry-dialog .entry-buttons button,#entry-reload{
+ font:700 var(--action-font) 'Source Sans 3',sans-serif;min-width:112px;height:var(--control-height);padding:8px 16px;margin:0;border:1px solid #E3DCCF;border-radius:var(--control-radius);background:#FDFCF8;color:#24231F;transition:background-color .1s ease .04s,color .1s ease .04s,border-color .1s ease .04s}
+#hotkeys .entry-buttons button:hover:not(:disabled),#entry-dialog .entry-buttons button:hover,#entry-reload:hover{background:#F06424;color:#fff;border-color:#F06424}
+#hotkeys .entry-buttons .primary,#entry-confirm{background:#F06424!important;color:#fff!important;border-color:#F06424!important}
+#hotkeys .entry-buttons .primary:hover:not(:disabled),#entry-confirm:hover{background:#D24C16!important;border-color:#D24C16!important}
+#hotkeys input,#entry-dialog select,#entry-dialog select::picker(select){font:400 var(--action-font) 'Source Sans 3',sans-serif}
+#hotkeys input,#entry-dialog select{height:var(--control-height);padding:8px var(--control-padding);border:1px solid #E3DCCF;border-radius:var(--control-radius);background:#FDFCF8;color:#24231F}
+#hotkeys td{height:var(--row-height);padding:6px var(--control-padding);font-size:var(--action-font)}
+#hotkeys th{font-size:var(--action-font);padding:10px var(--control-padding)}
+#entry-dialog{width:640px;padding:20px 22px}#entry-dialog h2,#hotkeys h2{font-size:22px;margin:0 0 8px}
+#entry-dialog label{font-size:var(--action-font);margin:16px 0 8px}#entry-dialog p,#hotkeys p{font:400 16px/1.4 'Source Sans 3';color:#706D61}
+#entry-reload{margin-top:16px;min-width:0;width:100%;text-align:center}
+#entry-dialog .entry-buttons,#hotkeys .entry-buttons{gap:var(--control-gap);margin-top:16px;padding-top:16px;border-top:1px solid #E3DCCF}
+.toolbar button:hover::before,.row-play:hover::before,.row-star:hover::before{display:block;background:#F06424;border:0;border-radius:8px;inset:5px;transform:none}
+.toolbar button:hover,.row-play:hover,.row-star:hover{color:white}
+</style>
+<script>
+const reload=document.createElement('button');reload.id='entry-reload';reload.textContent='Загрузить процедуры из SolidWorks';reload.onclick=()=>{reload.textContent='Процедуры обновлены';setTimeout(()=>reload.textContent='Загрузить процедуры из SolidWorks',1000)};
+document.querySelector('#entry-dialog .entry-buttons').before(reload);
+</script>
+<style>#entry-dialog select:focus{outline:none;border-color:#F06424;box-shadow:0 0 0 2px #F0642414}#hotkeys .table-scroll,#hotkeys table,#hotkeys th,#hotkeys td{background:#FDFCF8}</style>
+<style>
+@font-face{font-family:'Source Sans 3';src:url('../../addin/portable/Fonts/SourceSans3-Semibold.ttf') format('truetype');font-weight:600;font-style:normal;font-display:block}
+body,button,input,select,label,.tile,.macro-name,.tile small,.macro-name small,#hotkeys td{font-weight:400}
+strong,h2,.header strong,#entry-dialog h2,#hotkeys h2,#hotkeys th{font-weight:600}
+.tile.active{font-weight:600}
+#hotkeys .entry-buttons button,#entry-dialog .entry-buttons button,#entry-reload{font-weight:400}
+#hotkeys .entry-buttons .primary,#entry-dialog .entry-buttons #entry-confirm{font-weight:600}
+#entry-dialog label{font-weight:400}
+</style>
+
 </body></html>
