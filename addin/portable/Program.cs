@@ -73,7 +73,7 @@ namespace SWToolsHub.Portable
             Font = UiTheme.CreateFont(); titleFont = (Font)Font.Clone(); BackColor = Background; ForeColor = Foreground;
             var shell = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 5, Padding = new Padding(0) };
             shell.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-            foreach (var height in new[] { 64, 48, 24, 110 }) shell.RowStyles.Add(new RowStyle(SizeType.Absolute, height));
+            foreach (var height in new[] { 64, 56, 30, 120 }) shell.RowStyles.Add(new RowStyle(SizeType.Absolute, height));
             shell.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
             var header = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 3, RowCount = 1, Padding = new Padding(20, 12, 16, 12) };
             header.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
@@ -157,7 +157,7 @@ namespace SWToolsHub.Portable
         {
             var image = new Bitmap(24, 24);
             using (var g = Graphics.FromImage(image))
-            using (var pen = new Pen(Foreground, 1.6f)) {
+            using (var pen = new Pen(Foreground, 2f)) {
                 g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
                 if (kind == "folder") g.DrawPolygon(pen, new[] { new Point(3, 6), new Point(10, 6), new Point(12, 9), new Point(21, 9), new Point(21, 19), new Point(3, 19) });
                 else if (kind == "play") g.DrawPolygon(pen, new[] { new Point(8, 4), new Point(20, 12), new Point(8, 20) });
@@ -210,10 +210,10 @@ namespace SWToolsHub.Portable
             moduleGrid.ResumeLayout();
             bool home = section == null && !searching;
             string title = home ? "Избранные инструменты" : searching ? "Результаты поиска" : section;
-            content.Controls.Add(new Label { Text = title, Width = width, Height = 38, TextAlign = ContentAlignment.MiddleLeft, Font = titleFont });
+            content.Controls.Add(new Label { Text = title, Width = width, Height = 44, TextAlign = ContentAlignment.MiddleLeft, Font = titleFont });
             var visible = VisibleMacros();
             foreach (var macro in visible) {
-                var row = new TableLayoutPanel { Width = width, Height = home ? 76 : 60, ColumnCount = 3, RowCount = 1, Margin = new Padding(0, 0, 0, 4) };
+                var row = new TableLayoutPanel { Width = width, Height = home ? 84 : 68, ColumnCount = 3, RowCount = 1, Margin = new Padding(0, 0, 0, 4) };
                 row.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 40)); row.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100)); row.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 40));
                 bool favorite = settings.Favorites.Contains(macro.id, StringComparer.OrdinalIgnoreCase);
                 var star = MakeButton(favorite ? "★" : "☆"); star.Dock = DockStyle.Fill; star.Padding = new Padding(0); star.TextAlign = ContentAlignment.MiddleCenter;

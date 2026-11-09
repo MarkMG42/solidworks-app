@@ -10,14 +10,14 @@ namespace SWToolsHub.Portable
 {
     internal static class UiTheme
     {
-        public static readonly Color Background = Color.FromArgb(252, 244, 234);
+        public static readonly Color Background = Color.FromArgb(254, 248, 242);
         public static readonly Color Surface = Color.White;
-        public static readonly Color Text = Color.FromArgb(163, 93, 76);
-        public static readonly Color Muted = Color.FromArgb(163, 93, 76);
+        public static readonly Color Text = Color.FromArgb(135, 75, 61);
+        public static readonly Color Muted = Color.FromArgb(135, 75, 61);
         public static readonly Color Card = Color.White;
         public static readonly Color Selected = Color.FromArgb(255, 246, 240);
         public static readonly Color Accent = Color.FromArgb(233, 149, 125);
-        public static readonly Color OnCard = Color.FromArgb(163, 93, 76);
+        public static readonly Color OnCard = Color.FromArgb(135, 75, 61);
         public static readonly Color Border = Color.FromArgb(163, 93, 76);
         private static readonly PrivateFontCollection fonts = new PrivateFontCollection();
         private static string fontPath;
@@ -25,12 +25,12 @@ namespace SWToolsHub.Portable
         [DllImport("gdi32.dll", CharSet = CharSet.Unicode)] private static extern bool RemoveFontResourceEx(string file, uint flags, IntPtr reserved);
         public static void Initialize()
         {
-            fontPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Fonts", "SourceSans3-Semibold.ttf");
+            fontPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Fonts", "SourceSans3-Bold.ttf");
             if (File.Exists(fontPath)) { AddFontResourceEx(fontPath, 0x10, IntPtr.Zero); fonts.AddFontFile(fontPath); }
         }
         public static Font CreateFont() => fonts.Families.Length > 0
-            ? new Font(fonts.Families[0], 11.5f, FontStyle.Regular)
-            : new Font("Segoe UI", 11.5f, FontStyle.Bold);
+            ? new Font(fonts.Families[0], 14f, FontStyle.Bold)
+            : new Font("Segoe UI", 14f, FontStyle.Bold);
         public static void Shutdown()
         {
             fonts.Dispose();
@@ -55,9 +55,9 @@ namespace SWToolsHub.Portable
         {
             e.Graphics.Clear(Parent?.BackColor ?? BackColor);
             e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
-            using (var path = UiTheme.Shape(new RectangleF(.5f, .5f, Width - 1, Height - 1), 12))
+            using (var path = UiTheme.Shape(new RectangleF(1, 1, Width - 2, Height - 2), 12))
             using (var fill = new SolidBrush(BackColor))
-            using (var pen = new Pen(BorderColor)) { e.Graphics.FillPath(fill, path); e.Graphics.DrawPath(pen, path); }
+            using (var pen = new Pen(BorderColor, 2)) { e.Graphics.FillPath(fill, path); e.Graphics.DrawPath(pen, path); }
         }
     }
     internal sealed class RoundedButton : Button
@@ -73,9 +73,9 @@ namespace SWToolsHub.Portable
             e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
             bool card = BackColor.ToArgb() == UiTheme.Card.ToArgb() || BackColor.ToArgb() == UiTheme.Selected.ToArgb();
             var hoverColor = card ? UiTheme.Selected : UiTheme.Background;
-            using (var path = UiTheme.Shape(new RectangleF(1, 1, Width - 2, Height - 2), 10))
+            using (var path = UiTheme.Shape(new RectangleF(1.5f, 1.5f, Width - 3, Height - 3), 10))
             using (var fill = new SolidBrush(hovered && Enabled ? hoverColor : BackColor))
-            using (var pen = new Pen(UiTheme.Border, Focused ? 2 : 1)) {
+            using (var pen = new Pen(UiTheme.Border, Focused ? 3 : 2)) {
                 e.Graphics.FillPath(fill, path); e.Graphics.DrawPath(pen, path);
             }
             if (Image != null) {
