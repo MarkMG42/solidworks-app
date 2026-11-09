@@ -64,6 +64,7 @@ namespace SWToolsHub.Portable
         private Settings settings = new Settings();
         public sealed class Settings {
             public string Folder { get; set; }
+            // Retain legacy data when saving other settings; no description UI remains.
             public Dictionary<string, string> Descriptions { get; set; } = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             public Dictionary<string, int> Hotkeys { get; set; } = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
             public List<string> Favorites { get; set; } = new List<string>();
@@ -283,7 +284,7 @@ namespace SWToolsHub.Portable
                 shell.ResumeLayout(true);
                 int visibleCount = VisibleMacros().Length;
                 bool home = section == null && string.IsNullOrWhiteSpace(search.Text);
-                int listHeight = Px(44) + (visibleCount == 0 ? Px(100) : visibleCount * (Px(110) + Px(4)));
+                int listHeight = Px(44) + (visibleCount == 0 ? Px(100) : visibleCount * (Px(84) + Px(4)));
                 if (home && macros.Any(m => m.category == "Без раздела")) listHeight += Px(48);
                 int frameHeight = Math.Max(Px(240), listHeight + libraryFrame.Padding.Vertical + libraryFrame.Margin.Vertical);
                 shell.RowStyles[5].SizeType = SizeType.Absolute;
@@ -333,7 +334,7 @@ namespace SWToolsHub.Portable
             content.Controls.Add(new Label { Text = title, Margin = new Padding(0), Width = width, Height = Px(44), TextAlign = ContentAlignment.MiddleLeft, Font = titleFont });
             var visible = VisibleMacros();
             foreach (var macro in visible) {
-                var row = new TableLayoutPanel { Width = width, Height = Px(110), ColumnCount = 4, RowCount = 1, Margin = Space(0, 0, 0, 4) };
+                var row = new TableLayoutPanel { Width = width, Height = Px(84), ColumnCount = 4, RowCount = 1, Margin = Space(0, 0, 0, 4) };
                 row.Paint += (s, e) => { using (var pen = new Pen(UiTheme.Border)) e.Graphics.DrawLine(pen, 0, row.Height - 1, row.Width, row.Height - 1); };
                 row.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, Px(52))); row.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100)); row.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, Px(uiScale <= .8f ? 0 : 128))); row.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, Px(52)));
                 bool favorite = settings.Favorites.Contains(macro.id, StringComparer.OrdinalIgnoreCase);
@@ -350,12 +351,7 @@ namespace SWToolsHub.Portable
                 var name = MakeButton(macro.name);
                 ((RoundedButton)name).Borderless = true;
                 ((RoundedButton)name).SecondaryText = macro.category;
-                string description;
-                settings.Descriptions.TryGetValue(macro.id, out description);
-                ((RoundedButton)name).DescriptionText = string.IsNullOrWhiteSpace(description) ? "Описание не задано" : description;
-                tips.SetToolTip(name, ((RoundedButton)name).DescriptionText + "\nПравой кнопкой — изменить описание");
-                var menu = new ContextMenuStrip(); menu.Items.Add("Изменить описание…", null, (sender, args) => EditDescription(macro));
-                name.ContextMenuStrip = menu; name.Disposed += (sender, args) => menu.Dispose();
+                tips.SetToolTip(name, macro.name);
                 int key; string shortcut = settings.Hotkeys.TryGetValue(macro.id, out key) ? Hotkey.Format(key) : "";
                 var shortcutLabel = new Label { Text = shortcut, Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleRight, AutoEllipsis = true, ForeColor = Muted, Margin = Space(0, 0, 8, 0) };
                 var shortcutFont = new Font(Font.FontFamily, 11f, FontStyle.Regular); shortcutLabel.Font = shortcutFont; shortcutLabel.Disposed += (sender, args) => shortcutFont.Dispose();
@@ -379,19 +375,6 @@ namespace SWToolsHub.Portable
             }
             count.Text = macros.Length + " инструментов · Portable";
             content.ResumeLayout();
-        }
-        private void EditDescription(Macro macro)
-        {
-            if (busy) return;
-            string previous; bool existed = settings.Descriptions.TryGetValue(macro.id, out previous);
-            using (var dialog = new DescriptionDialog(macro.name, previous)) {
-                if (dialog.ShowDialog(this) != DialogResult.OK) return;
-                if (string.IsNullOrEmpty(dialog.Description)) settings.Descriptions.Remove(macro.id);
-                else settings.Descriptions[macro.id] = dialog.Description;
-                try { SaveSettings(); }
-                catch (Exception ex) { if (existed) settings.Descriptions[macro.id] = previous; else settings.Descriptions.Remove(macro.id); ShowError("Не удалось сохранить описание: " + ex.Message); return; }
-            }
-            viewState.Invalidate(); Filter();
         }
         private void RefreshConnection()
         {

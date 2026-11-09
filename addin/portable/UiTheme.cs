@@ -103,7 +103,6 @@ namespace SWToolsHub.Portable
     internal sealed class RoundedButton : Button
     {
         public string SecondaryText { get; set; }
-        public string DescriptionText { get; set; }
         public int CornerRadius { get; set; } = 16;
         public float IconSize { get; set; } = 24;
         public bool IconOnly { get; set; }
@@ -186,17 +185,7 @@ namespace SWToolsHub.Portable
             var textColor = Enabled ? UiTheme.Blend(ForeColor, Color.White, accentProgress) : SystemColors.GrayText;
             var flags = TextFormatFlags.VerticalCenter | TextFormatFlags.WordBreak | TextFormatFlags.EndEllipsis;
             flags |= TextAlign == ContentAlignment.MiddleCenter ? TextFormatFlags.HorizontalCenter : TextFormatFlags.Left;
-            if (!string.IsNullOrEmpty(DescriptionText)) {
-                using (var detailFont = new Font(Font.FontFamily, Math.Max(8, Font.Size - 3), FontStyle.Regular)) {
-                    int gap = 4, groupHeight = Font.Height + detailFont.Height * 2 + gap * 2;
-                    int top = Math.Max(textBounds.Top, (Height - groupHeight) / 2);
-                    var lineFlags = TextFormatFlags.Left | TextFormatFlags.SingleLine | TextFormatFlags.EndEllipsis | TextFormatFlags.NoPrefix;
-                    TextRenderer.DrawText(e.Graphics, Text, Font, new Rectangle(textBounds.Left, top, textBounds.Width, Font.Height), textColor, lineFlags);
-                    var secondaryColor = UiTheme.Blend(UiTheme.Muted, Color.White, accentProgress);
-                    TextRenderer.DrawText(e.Graphics, SecondaryText ?? "", detailFont, new Rectangle(textBounds.Left, top + Font.Height + gap, textBounds.Width, detailFont.Height), secondaryColor, lineFlags);
-                    TextRenderer.DrawText(e.Graphics, DescriptionText.Replace("\r", " ").Replace("\n", " "), detailFont, new Rectangle(textBounds.Left, top + Font.Height + detailFont.Height + gap * 2, textBounds.Width, detailFont.Height), secondaryColor, lineFlags);
-                }
-            } else if (!string.IsNullOrEmpty(SecondaryText)) {
+            if (!string.IsNullOrEmpty(SecondaryText)) {
                 int lineHeight = Font.Height;
                 var titleBounds = new Rectangle(textBounds.Left, Math.Max(textBounds.Top, (Height - lineHeight * 2 - 2) / 2), textBounds.Width, lineHeight + 2);
                 var detailBounds = new Rectangle(titleBounds.Left, titleBounds.Bottom + 2, titleBounds.Width, lineHeight);
