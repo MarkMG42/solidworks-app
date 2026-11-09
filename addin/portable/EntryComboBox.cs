@@ -11,9 +11,14 @@ namespace SWToolsHub.Portable
     internal sealed class EntryComboBox : ComboBox
     {
         private bool expanded;
+        private bool hovered;
         private bool consumeMouseUp;
         private int Px(int value) => Math.Max(1, (int)Math.Round(value * DeviceDpi / 96f));
         public EntryComboBox() { FlatStyle = FlatStyle.Flat; DropDownStyle = ComboBoxStyle.DropDown; }
+        protected override void OnMouseEnter(EventArgs e) { hovered = true; Invalidate(); base.OnMouseEnter(e); }
+        protected override void OnMouseLeave(EventArgs e) { hovered = false; Invalidate(); base.OnMouseLeave(e); }
+        protected override void OnGotFocus(EventArgs e) { Invalidate(); base.OnGotFocus(e); }
+        protected override void OnLostFocus(EventArgs e) { Invalidate(); base.OnLostFocus(e); }
         protected override void OnHandleCreated(EventArgs e) { base.OnHandleCreated(e); LayoutEdit(); }
         protected override void OnResize(EventArgs e) { base.OnResize(e); LayoutEdit(); Invalidate(); }
         protected override void OnFontChanged(EventArgs e) { base.OnFontChanged(e); LayoutEdit(); }
@@ -52,9 +57,9 @@ namespace SWToolsHub.Portable
             using (var fill = new SolidBrush(BackColor)) graphics.FillRectangle(fill, Width - Px(44), 0, Px(44), Height);
             using (var erase = new Pen(BackColor, Px(3))) graphics.DrawRectangle(erase, 0, 0, Width - 1, Height - 1);
             using (var frame = UiTheme.Shape(new RectangleF(.5f, .5f, Width - 1, Height - 1), Px(8)))
-            using (var pen = new Pen(UiTheme.Border)) graphics.DrawPath(pen, frame);
+            using (var pen = new Pen(Enabled && (hovered || Focused || expanded) ? UiTheme.AccentInk : UiTheme.Border)) graphics.DrawPath(pen, frame);
             float x = Width - Px(24), y = Height / 2f, direction = expanded ? -1 : 1;
-            using (var pen = new Pen(Enabled ? UiTheme.Muted : SystemColors.GrayText, 1.4f * DeviceDpi / 96f)) {
+            using (var pen = new Pen(Enabled ? (hovered || expanded ? UiTheme.AccentInk : UiTheme.Muted) : SystemColors.GrayText, 1.4f * DeviceDpi / 96f)) {
                 pen.StartCap = pen.EndCap = LineCap.Round; pen.LineJoin = LineJoin.Round;
                 graphics.DrawLines(pen, new[] { new PointF(x - Px(4), y - direction * Px(2)), new PointF(x, y + direction * Px(2)), new PointF(x + Px(4), y - direction * Px(2)) });
             }

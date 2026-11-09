@@ -55,7 +55,47 @@ try {
     bool failed = false; try { SettingsFile.Write(blocked, "{}"); } catch (IOException) { failed = true; }
     Check(failed && Directory.Exists(blocked), "failed replacement preserves destination");
     Check(!Directory.GetFiles(folder).Any(p => p.EndsWith(".tmp")), "failed save cleans temporary file");
+    string user = Path.Combine(folder, "MigrateUser");
+    string oldDir = Path.Combine(user, "SWToolsHub");
+    string oldSettings = Path.Combine(oldDir, "portable.json");
+    string newSettings = SettingsFile.UserPath(user);
+    SettingsFile.MigrateUserSettings(user);
+    Check(!Directory.Exists(oldDir) && !Directory.Exists(Path.GetDirectoryName(newSettings)), "fresh startup does not create legacy directory");
+    SettingsFile.Write(oldSettings, "{\"Folder\":\"old-library\",\"Hotkeys\":{\"test\":131154}}");
+    string before = File.ReadAllText(oldSettings);
+    SettingsFile.MigrateUserSettings(user);
+    Check(File.ReadAllText(newSettings) == before, "migration preserves complete settings payload");
+    Check(!Directory.Exists(oldDir), "migration removes empty legacy directory");
+    SettingsFile.MigrateUserSettings(user);
+    Check(File.ReadAllText(newSettings) == before, "migration can repeat without data loss");
+    SettingsFile.Write(oldSettings, before);
+    SettingsFile.MigrateUserSettings(user);
+    Check(!Directory.Exists(oldDir), "identical legacy settings safely cleaned up");
+    SettingsFile.Write(oldSettings, "{\"Folder\":\"different-library\"}");
+    SettingsFile.MigrateUserSettings(user);
+    Check(File.ReadAllText(newSettings) == before, "existing new settings are not overwritten");
+    var backup = Directory.GetFiles(Path.GetDirectoryName(newSettings), "portable.legacy.*.json");
+    Check(backup.Length == 1 && File.ReadAllText(backup[0]).Contains("different-library"), "conflicting legacy settings kept as backup");
+    Check(!Directory.Exists(oldDir), "conflict leaves no empty old directory");
+    SettingsFile.Write(oldSettings, before);
+    string macroPath = Path.Combine(oldDir, "user.swp");
+    File.WriteAllText(macroPath, "user data");
+    SettingsFile.MigrateUserSettings(user);
+    Check(File.ReadAllText(macroPath) == "user data", "unknown files and macro paths are never moved or deleted");
+    Check(!File.Exists(oldSettings), "only settings migrated when user files present");
 } finally { Directory.Delete(folder, true); }
+var view = new LibraryViewState();
+Check(view.NeedsUpdate(null, true, new[] { "A.swp", "B.swp" }), "first search renders");
+Check(!view.NeedsUpdate(null, true, new[] { "A.swp", "B.swp" }), "typing with same results skips layout");
+Check(view.NeedsUpdate(null, true, new[] { "A.swp" }), "narrowed results render");
+Check(view.NeedsUpdate(null, true, Array.Empty<string>()), "empty result transition renders");
+Check(!view.NeedsUpdate(null, true, Array.Empty<string>()), "typing into empty result does not rebuild");
+Check(view.NeedsUpdate(null, false, Array.Empty<string>()), "clearing search updates heading");
+Check(view.NeedsUpdate("Сборки", false, Array.Empty<string>()), "section switch renders even when empty");
+view.Invalidate();
+Check(view.NeedsUpdate("Сборки", false, Array.Empty<string>()), "favorites or catalog refresh invalidates cache");
+Check(LibraryViewState.FullWidth(900, false, 17) == LibraryViewState.FullWidth(883, true, 17), "scrollbar toggle does not change layout width");
+Check(LibraryViewState.FullWidth(720, false, 17) == LibraryViewState.FullWidth(703, true, 17), "scrollbar does not cross responsive breakpoint");
 Console.WriteLine($"{count} hotkey/persistence checks passed.");
 
 sealed class FakeBackend : IHotkeyBackend

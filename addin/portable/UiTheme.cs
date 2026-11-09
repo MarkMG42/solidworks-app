@@ -88,7 +88,7 @@ namespace SWToolsHub.Portable
         public string SecondaryText { get; set; }
         public float IconSize { get; set; } = 24;
         public bool IconOnly { get; set; }
-        public bool AccentHover { get; set; }
+        public bool AccentHover { get; set; } = true;
         public bool LeadingIcon { get; set; }
         public bool Borderless { get; set; }
         private bool hovered;
@@ -135,7 +135,7 @@ namespace SWToolsHub.Portable
             float progress = Enabled ? hoverProgress : 0;
             float accentProgress = AccentHover ? progress : 0;
             bool accentActive = accentProgress > 0;
-            var hoverColor = AccentHover ? UiTheme.AccentInk : IconOnly ? UiTheme.IconHover : card ? UiTheme.Selected : UiTheme.Background;
+            var hoverColor = AccentHover ? (BackColor.ToArgb() == UiTheme.AccentInk.ToArgb() ? Color.FromArgb(210, 76, 22) : UiTheme.AccentInk) : IconOnly ? UiTheme.IconHover : card ? UiTheme.Selected : UiTheme.Background;
             float available = Math.Max(1, Math.Min(Width, Height) - 2);
             float diameter = Math.Min(available, Math.Max(1, Math.Min(Width, Height) * (36f / 46f) - 2));
             var shapeBounds = IconOnly ? new RectangleF((Width - diameter) / 2, (Height - diameter) / 2, diameter, diameter) : new RectangleF(1, 1, Width - 2, Height - 2);
