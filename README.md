@@ -1,5 +1,8 @@
 # SW Tools Hub
 
+**Без прав администратора: [скачать SW Tools Hub Portable ZIP](https://github.com/MarkMG42/solidworks-app/raw/refs/heads/main/installer/SWToolsHub-Portable.zip).** Распакуйте весь архив в свою папку, скопируйте `.swp` в `Library/Macros`, откройте SolidWorks обычным способом и запустите `SWToolsHub.exe`. Ничего устанавливать и включать в дополнениях не нужно. Это отдельное простое окно WinForms с поиском и запуском; WebView2/Node/SDK не требуются. Нужен системный .NET Framework 4.8. Windows/SW2025 приёмка ещё не выполнена.
+
+
 **Windows: [скачать тестовый EXE-установщик](https://github.com/MarkMG42/solidworks-app/raw/refs/heads/main/installer/SWToolsHub-Setup.exe).** Node.js и .NET SDK для него не нужны. Закройте SolidWorks, установите, скопируйте два рабочих .swp в `C:\Program Files\SWToolsHub\Library\Macros`, включите SW Tools Hub в дополнениях. При отсутствии WebView2 установщик загрузит компонент Microsoft; нужен Интернет. Требуется .NET Framework 4.8. Реальный запуск в SolidWorks 2025 ещё не подтверждён; сначала проверяйте на копиях чертежей.
 
 Компактная библиотека VBA-макросов для SolidWorks 2025. Поиск, категории, избранное и две темы в одном интерфейсе.

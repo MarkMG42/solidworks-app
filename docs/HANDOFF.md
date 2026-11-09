@@ -49,3 +49,9 @@ Windows, SolidWorks 2025 и тестовые CAD-документы в обла�
 ## Готовый EXE
 
 Добавлен installer/Setup.nsi и тестовый SWToolsHub-Setup.exe. Payload net48 собран в Linux с interop SW2024 32.1.0. Node/SDK пользователю не требуются. WebView2 при отсутствии ставится bootstrapper Microsoft с проверкой Authenticode; .NET Framework 4.8 проверяется. Проверены компиляция NSIS и синтаксис PowerShell; Windows установка и SW2025 не проверены. Макросов в EXE нет.
+
+## Portable без администратора (9 ноября 2026)
+
+По просьбе пользователя добавлено отдельное WinForms-приложение addin/portable, net48 x64, manifest asInvoker. Оно подключается к открытому SolidWorks через GetActiveObject и выполняет RunMacro2 из главного STA потока (COM маршалит вызов в SW). Установки и регистрации дополнения, WebView2/Node/SDK на машине пользователя нет. Требуется системный Framework 4.8. Список, поиск и запуск реализованы; React-интерфейс сохранён отдельно, его темы/избранное в native UI не перенесены.
+
+Публичный installer/SWToolsHub-Portable.zip содержит EXE, interop DLL, конфигурацию и русскую инструкцию; .swp исключены. Сборка portable прошла с 0 ошибок/предупреждений на interop API2024. Упаковщик проверяет CRC архива, отсутствие .swp и WebView2. Приёмка Windows, GetActiveObject, COM и VBA ещё не выполнена. Не утверждать работу в SolidWorks до реального теста. Старая административная установка остаётся альтернативой, не используется в Portable.

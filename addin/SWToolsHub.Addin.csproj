@@ -13,6 +13,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Remove="tests/**/*.cs" />
+    <Compile Remove="portable/**/*.cs" />
     <Reference Include="SolidWorks.Interop.swpublished"><HintPath>$(SolidWorksInteropPath)\SolidWorks.Interop.swpublished.dll</HintPath><EmbedInteropTypes>false</EmbedInteropTypes><Private>true</Private></Reference>
     <Reference Include="SolidWorks.Interop.sldworks"><HintPath>$(SolidWorksInteropPath)\SolidWorks.Interop.sldworks.dll</HintPath><EmbedInteropTypes>false</EmbedInteropTypes><Private>true</Private></Reference>
     <Reference Include="System.Web.Extensions" />
