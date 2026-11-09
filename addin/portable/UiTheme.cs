@@ -53,6 +53,7 @@ namespace SWToolsHub.Portable
     }
     internal sealed class RoundedButton : Button
     {
+        public string SecondaryText { get; set; }
         private bool hovered;
         public RoundedButton() { DoubleBuffered = true; ResizeRedraw = true; }
         protected override void OnMouseEnter(EventArgs e) { hovered = true; Invalidate(); base.OnMouseEnter(e); }
@@ -73,7 +74,15 @@ namespace SWToolsHub.Portable
             var textBounds = new Rectangle(Padding.Left, Padding.Top, Math.Max(1, Width - Padding.Horizontal), Math.Max(1, Height - Padding.Vertical));
             var flags = TextFormatFlags.VerticalCenter | TextFormatFlags.WordBreak | TextFormatFlags.EndEllipsis;
             flags |= TextAlign == ContentAlignment.MiddleCenter ? TextFormatFlags.HorizontalCenter : TextFormatFlags.Left;
-            TextRenderer.DrawText(e.Graphics, Text, Font, textBounds, Enabled ? ForeColor : SystemColors.GrayText, flags);
+            if (!string.IsNullOrEmpty(SecondaryText)) {
+                int lineHeight = Font.Height;
+                var titleBounds = new Rectangle(textBounds.Left, Math.Max(textBounds.Top, (Height - lineHeight * 2 - 2) / 2), textBounds.Width, lineHeight + 2);
+                var detailBounds = new Rectangle(titleBounds.Left, titleBounds.Bottom + 2, titleBounds.Width, lineHeight);
+                var lineFlags = TextFormatFlags.Left | TextFormatFlags.SingleLine | TextFormatFlags.EndEllipsis;
+                TextRenderer.DrawText(e.Graphics, Text, Font, titleBounds, Enabled ? ForeColor : SystemColors.GrayText, lineFlags);
+                using (var detailFont = new Font(Font.FontFamily, Math.Max(8, Font.Size - 1), Font.Style))
+                    TextRenderer.DrawText(e.Graphics, SecondaryText, detailFont, detailBounds, Color.FromArgb(146, 151, 158), lineFlags);
+            } else TextRenderer.DrawText(e.Graphics, Text, Font, textBounds, Enabled ? ForeColor : SystemColors.GrayText, flags);
         }
     }
 }
