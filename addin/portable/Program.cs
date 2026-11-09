@@ -32,7 +32,7 @@ namespace SWToolsHub.Portable
         private bool busy;
         private string macroFolder;
         private readonly ToolTip tips = new ToolTip();
-        private readonly TableLayoutPanel moduleGrid = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 2, Margin = new Padding(20, 4, 20, 8) };
+        private readonly TableLayoutPanel moduleGrid = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 4, RowCount = 1, Margin = new Padding(20, 4, 20, 8) };
         private readonly Label folderLabel = new Label { Dock = DockStyle.Top, Height = 42, AutoEllipsis = true };
         private readonly FlowLayoutPanel content = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.TopDown, WrapContents = false, AutoScroll = true, Padding = new Padding(16, 0, 16, 0) };
         private readonly Label heading = new Label { Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft };
@@ -68,12 +68,12 @@ namespace SWToolsHub.Portable
         {
             Text = "SW Tools Hub";
             AutoScaleMode = AutoScaleMode.Dpi;
-            ClientSize = new Size(390, 760); MinimumSize = new Size(340, 540);
+            ClientSize = new Size(900, 600); MinimumSize = new Size(660, 480);
             StartPosition = FormStartPosition.CenterScreen;
             Font = UiTheme.CreateFont(); titleFont = (Font)Font.Clone(); BackColor = Background; ForeColor = Foreground;
             var shell = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 5, Padding = new Padding(0) };
             shell.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-            foreach (var height in new[] { 64, 48, 24, 190 }) shell.RowStyles.Add(new RowStyle(SizeType.Absolute, height));
+            foreach (var height in new[] { 64, 48, 24, 110 }) shell.RowStyles.Add(new RowStyle(SizeType.Absolute, height));
             shell.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
             var header = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 3, RowCount = 1, Padding = new Padding(20, 12, 16, 12) };
             header.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
@@ -90,8 +90,8 @@ namespace SWToolsHub.Portable
             heading.Text = "Поиск макросов"; heading.ForeColor = Muted;
             status.Height = 44; status.Padding = new Padding(20, 4, 20, 0); status.ForeColor = Muted;
             folderLabel.Visible = false;
-            moduleGrid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50)); moduleGrid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
-            moduleGrid.RowStyles.Add(new RowStyle(SizeType.Percent, 50)); moduleGrid.RowStyles.Add(new RowStyle(SizeType.Percent, 50));
+            for (int i = 0; i < 4; i++) moduleGrid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25));
+            moduleGrid.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
             count.Padding = new Padding(20, 0, 0, 0); count.ForeColor = Muted;
             shell.Controls.Add(header, 0, 0); shell.Controls.Add(searchBox, 0, 1); shell.Controls.Add(heading, 0, 2);
             var libraryFrame = new RoundedPanel { Dock = DockStyle.Fill, BackColor = Surface, Margin = new Padding(20, 10, 20, 20), Padding = new Padding(14, 10, 14, 12) };
@@ -205,7 +205,7 @@ namespace SWToolsHub.Portable
                 tile.Dock = DockStyle.Fill; tile.Margin = new Padding(4); tile.AccessibleName = module;
                 if (section == module) tile.BackColor = Color.FromArgb(47, 51, 57);
                 tile.Click += (s, e) => Navigate(section == module ? null : module);
-                moduleGrid.Controls.Add(tile, i % 2, i / 2);
+                moduleGrid.Controls.Add(tile, i, 0);
             }
             moduleGrid.ResumeLayout();
             bool home = section == null && !searching;
