@@ -10,15 +10,19 @@ namespace SWToolsHub.Portable
 {
     internal static class UiTheme
     {
-        public static readonly Color Background = Color.FromArgb(254, 248, 242);
-        public static readonly Color Surface = Color.White;
-        public static readonly Color Text = Color.FromArgb(135, 75, 61);
-        public static readonly Color Muted = Color.FromArgb(135, 75, 61);
-        public static readonly Color Card = Color.White;
-        public static readonly Color Selected = Color.FromArgb(255, 246, 240);
-        public static readonly Color Accent = Color.FromArgb(233, 149, 125);
-        public static readonly Color OnCard = Color.FromArgb(135, 75, 61);
-        public static readonly Color Border = Color.FromArgb(163, 93, 76);
+        public static readonly Color Background = Color.FromArgb(253, 252, 248);
+        public static readonly Color Surface = Color.FromArgb(246, 245, 238);
+        public static readonly Color Text = Color.FromArgb(36, 35, 31);
+        public static readonly Color Muted = Color.FromArgb(112, 109, 97);
+        public static readonly Color Card = Color.FromArgb(246, 245, 238);
+        public static readonly Color Selected = Color.FromArgb(236, 234, 224);
+        public static readonly Color Accent = Color.FromArgb(112, 109, 97);
+        public static readonly Color OnCard = Color.FromArgb(36, 35, 31);
+        public static readonly Color Border = Color.FromArgb(222, 220, 209);
+        public static readonly Color IconInk = Color.FromArgb(112, 109, 97);
+        public static readonly Color IconSurface = Color.FromArgb(236, 234, 224);
+        public static readonly Color IconBorder = Color.FromArgb(219, 216, 203);
+        public static readonly Color IconHover = Color.FromArgb(226, 223, 210);
         private static readonly PrivateFontCollection fonts = new PrivateFontCollection();
         private static string fontPath;
         [DllImport("gdi32.dll", CharSet = CharSet.Unicode)] private static extern int AddFontResourceEx(string file, uint flags, IntPtr reserved);
@@ -55,7 +59,7 @@ namespace SWToolsHub.Portable
         {
             e.Graphics.Clear(Parent?.BackColor ?? BackColor);
             e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
-            using (var path = UiTheme.Shape(new RectangleF(.5f, .5f, Width - 1, Height - 1), 12))
+            using (var path = UiTheme.Shape(new RectangleF(.5f, .5f, Width - 1, Height - 1), 16))
             using (var fill = new SolidBrush(BackColor))
             using (var pen = new Pen(BorderColor, 1)) { e.Graphics.FillPath(fill, path); e.Graphics.DrawPath(pen, path); }
         }
@@ -63,6 +67,9 @@ namespace SWToolsHub.Portable
     internal sealed class RoundedButton : Button
     {
         public string SecondaryText { get; set; }
+        public bool IconOnly { get; set; }
+        public bool LeadingIcon { get; set; }
+        public bool Borderless { get; set; }
         private bool hovered;
         public RoundedButton() { DoubleBuffered = true; ResizeRedraw = true; }
         protected override void OnMouseEnter(EventArgs e) { hovered = true; Invalidate(); base.OnMouseEnter(e); }
@@ -72,17 +79,19 @@ namespace SWToolsHub.Portable
             e.Graphics.Clear(Parent?.BackColor ?? BackColor);
             e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
             bool card = BackColor.ToArgb() == UiTheme.Card.ToArgb() || BackColor.ToArgb() == UiTheme.Selected.ToArgb();
-            var hoverColor = card ? UiTheme.Selected : UiTheme.Background;
-            using (var path = UiTheme.Shape(new RectangleF(1, 1, Width - 2, Height - 2), 10))
+            var hoverColor = IconOnly ? UiTheme.IconHover : card ? UiTheme.Selected : UiTheme.Background;
+            using (var path = UiTheme.Shape(new RectangleF(1, 1, Width - 2, Height - 2), 16))
             using (var fill = new SolidBrush(hovered && Enabled ? hoverColor : BackColor))
-            using (var pen = new Pen(UiTheme.Border, Focused ? 2 : 1)) {
-                e.Graphics.FillPath(fill, path); e.Graphics.DrawPath(pen, path);
+            using (var pen = new Pen(Focused ? UiTheme.IconInk : IconOnly ? UiTheme.IconBorder : UiTheme.Border, Focused ? 2 : 1)) {
+                e.Graphics.FillPath(fill, path); if (!Borderless || Focused) e.Graphics.DrawPath(pen, path);
             }
             if (Image != null) {
-                int x = (Width - Image.Width) / 2, y = (Height - Image.Height) / 2;
+                int x = LeadingIcon ? Padding.Left : (Width - Image.Width) / 2;
+                int y = LeadingIcon ? Math.Max(8, (Height - Font.Height * (string.IsNullOrEmpty(SecondaryText) ? 3 : 2) - 2) / 2) : (Height - Image.Height) / 2;
                 if (Enabled) e.Graphics.DrawImage(Image, x, y); else ControlPaint.DrawImageDisabled(e.Graphics, Image, x, y, BackColor);
             }
             var textBounds = new Rectangle(Padding.Left, Padding.Top, Math.Max(1, Width - Padding.Horizontal), Math.Max(1, Height - Padding.Vertical));
+            if (LeadingIcon) { textBounds.X += 32; textBounds.Width = Math.Max(1, textBounds.Width - 32); }
             var flags = TextFormatFlags.VerticalCenter | TextFormatFlags.WordBreak | TextFormatFlags.EndEllipsis;
             flags |= TextAlign == ContentAlignment.MiddleCenter ? TextFormatFlags.HorizontalCenter : TextFormatFlags.Left;
             if (!string.IsNullOrEmpty(SecondaryText)) {
@@ -92,7 +101,7 @@ namespace SWToolsHub.Portable
                 var lineFlags = TextFormatFlags.Left | TextFormatFlags.SingleLine | TextFormatFlags.EndEllipsis;
                 TextRenderer.DrawText(e.Graphics, Text, Font, titleBounds, Enabled ? ForeColor : SystemColors.GrayText, lineFlags);
                 using (var detailFont = new Font(Font.FontFamily, Math.Max(8, Font.Size - 1), Font.Style))
-                    TextRenderer.DrawText(e.Graphics, SecondaryText, detailFont, detailBounds, card ? UiTheme.OnCard : UiTheme.Muted, lineFlags);
+                    TextRenderer.DrawText(e.Graphics, SecondaryText, detailFont, detailBounds, UiTheme.Muted, lineFlags);
             } else TextRenderer.DrawText(e.Graphics, Text, Font, textBounds, Enabled ? ForeColor : SystemColors.GrayText, flags);
         }
     }

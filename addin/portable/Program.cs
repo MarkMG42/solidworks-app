@@ -147,7 +147,7 @@ namespace SWToolsHub.Portable
         }
         private void ConfigureIcon(Button button, string icon, string description)
         {
-            StyleButton(button); button.BackColor = Surface; button.ForeColor = Foreground; button.Text = ""; button.Dock = DockStyle.Fill;
+            StyleButton(button); ((RoundedButton)button).IconOnly = true; button.BackColor = UiTheme.IconSurface; button.ForeColor = UiTheme.IconInk; button.Text = ""; button.Dock = DockStyle.Fill;
             button.Margin = new Padding(2); button.Padding = new Padding(0);
             button.Image = DrawIcon(icon); button.ImageAlign = ContentAlignment.MiddleCenter;
             button.AccessibleName = description; tips.SetToolTip(button, description);
@@ -157,16 +157,37 @@ namespace SWToolsHub.Portable
         {
             var image = new Bitmap(24, 24);
             using (var g = Graphics.FromImage(image))
-            using (var pen = new Pen(Foreground, 2f)) {
+            using (var pen = new Pen(UiTheme.IconInk, 1.35f)) {
                 g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+                pen.StartCap = pen.EndCap = System.Drawing.Drawing2D.LineCap.Round;
+                pen.LineJoin = System.Drawing.Drawing2D.LineJoin.Round;
                 if (kind == "folder") g.DrawPolygon(pen, new[] { new Point(3, 6), new Point(10, 6), new Point(12, 9), new Point(21, 9), new Point(21, 19), new Point(3, 19) });
                 else if (kind == "play") g.DrawPolygon(pen, new[] { new Point(8, 4), new Point(20, 12), new Point(8, 20) });
+                else if (kind == "part") {
+                    g.DrawPolygon(pen, new[] { new Point(12,3),new Point(21,8),new Point(21,18),new Point(12,23),new Point(3,18),new Point(3,8) });
+                    g.DrawLines(pen, new[] {new Point(3,8),new Point(12,13),new Point(21,8)}); g.DrawLine(pen,12,13,12,23);
+                }
+                else if (kind == "drawing") {
+                    g.DrawPolygon(pen,new[] {new Point(5,3),new Point(15,3),new Point(19,7),new Point(19,21),new Point(5,21)});
+                    g.DrawLines(pen,new[] {new Point(15,3),new Point(15,8),new Point(19,8)}); g.DrawLine(pen,8,12,16,12);g.DrawLine(pen,8,16,13,16);
+                }
+                else if (kind == "assembly") {
+                    foreach (var center in new[] {new Point(12,6),new Point(6,16),new Point(18,16)}) {
+                        var corners = Enumerable.Range(0,6).Select(i=>new PointF(center.X + 5*(float)Math.Sin(i*Math.PI/3),center.Y + 5*(float)Math.Cos(i*Math.PI/3))).ToArray();
+                        g.DrawPolygon(pen,corners);
+                    }
+                }
+                else if (kind == "laser") {
+                    g.DrawPolygon(pen,new[] {new Point(7,3),new Point(17,3),new Point(17,8),new Point(12,12),new Point(7,8)});
+                    g.DrawLine(pen,12,12,12,18);g.DrawLine(pen,3,21,21,21);g.DrawLine(pen,6,13,3,16);g.DrawLine(pen,18,13,21,16);
+                }
                 else {
                     var points = Enumerable.Range(0, 10).Select(i => {
                         double angle = -Math.PI / 2 + i * Math.PI / 5;
                         double radius = i % 2 == 0 ? 9 : 4;
                         return new PointF(12 + (float)(Math.Cos(angle) * radius), 12 + (float)(Math.Sin(angle) * radius));
                     }).ToArray();
+                    if (kind == "starFilled") using (var fill = new SolidBrush(Color.FromArgb(212, 201, 172))) g.FillPolygon(fill, points);
                     g.DrawPolygon(pen, points);
                 }
             }
@@ -198,10 +219,13 @@ namespace SWToolsHub.Portable
             bool searching = !string.IsNullOrWhiteSpace(search.Text);
             moduleGrid.SuspendLayout();
             foreach (Control child in moduleGrid.Controls.Cast<Control>().ToArray()) child.Dispose();
-            var symbols = new[] { "◇", "▤", "▦", "⌁" };
+            var symbols = new[] { "part", "drawing", "assembly", "laser" };
             for (int i = 0; i < MacroFolder.Modules.Length; i++) {
                 string module = MacroFolder.Modules[i];
-                var tile = MakeButton(symbols[i] + "  " + module + "\n\n" + macros.Count(m => m.category == module) + " макросов");
+                var tile = MakeButton(module);
+                ((RoundedButton)tile).SecondaryText = macros.Count(m => m.category == module) + " макросов";
+                tile.Image = DrawIcon(symbols[i]); ((RoundedButton)tile).LeadingIcon = true;
+                tile.Disposed += (s, e) => tile.Image.Dispose();
                 tile.Dock = DockStyle.Fill; tile.Margin = new Padding(4); tile.AccessibleName = module;
                 if (section == module) tile.BackColor = UiTheme.Selected;
                 tile.Click += (s, e) => Navigate(section == module ? null : module);
@@ -214,10 +238,12 @@ namespace SWToolsHub.Portable
             var visible = VisibleMacros();
             foreach (var macro in visible) {
                 var row = new TableLayoutPanel { Width = width, Height = home ? 84 : 68, ColumnCount = 3, RowCount = 1, Margin = new Padding(0, 0, 0, 4) };
+                row.Paint += (s, e) => { using (var pen = new Pen(UiTheme.Border)) e.Graphics.DrawLine(pen, 0, row.Height - 1, row.Width, row.Height - 1); };
                 row.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 40)); row.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100)); row.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 40));
                 bool favorite = settings.Favorites.Contains(macro.id, StringComparer.OrdinalIgnoreCase);
-                var star = MakeButton(favorite ? "★" : "☆"); star.Dock = DockStyle.Fill; star.Padding = new Padding(0); star.TextAlign = ContentAlignment.MiddleCenter;
-                star.AccessibleName = (favorite ? "Убрать из избранного: " : "В избранное: ") + macro.name;
+                var star = MakeButton("");
+                ConfigureIcon(star, favorite ? "starFilled" : "star", (favorite ? "Убрать из избранного: " : "В избранное: ") + macro.name);
+                star.Dock = DockStyle.None; star.Anchor = AnchorStyles.None; star.Size = new Size(36, 36);
                 star.Click += (s, e) => {
                     var previous = settings.Favorites.ToList();
                     settings.Favorites.RemoveAll(id => string.Equals(id, macro.id, StringComparison.OrdinalIgnoreCase));
@@ -226,12 +252,14 @@ namespace SWToolsHub.Portable
                     Filter();
                 };
                 var name = MakeButton(macro.name);
+                ((RoundedButton)name).Borderless = true;
                 if (home) ((RoundedButton)name).SecondaryText = macro.category;
                 name.Dock = DockStyle.Fill; name.AutoEllipsis = true;
                 if ((list.SelectedItem as Macro)?.id == macro.id) name.BackColor = UiTheme.Selected;
                 name.Click += (s, e) => { list.SelectedItem = macro; status.Text = "Выбран: " + macro.name; RenderLibrary(); };
-                var play = MakeButton("▷"); play.Dock = DockStyle.Fill; play.Padding = new Padding(0); play.TextAlign = ContentAlignment.MiddleCenter;
-                play.AccessibleName = "Выбрать процедуру и запустить: " + macro.name;
+                var play = MakeButton("");
+                ConfigureIcon(play, "play", "Выбрать процедуру и запустить: " + macro.name);
+                play.Dock = DockStyle.None; play.Anchor = AnchorStyles.None; play.Size = new Size(36, 36);
                 play.Click += (s, e) => { list.SelectedItem = macro; RunSelected(true); };
                 row.Controls.Add(star, 0, 0); row.Controls.Add(name, 1, 0); row.Controls.Add(play, 2, 0); content.Controls.Add(row);
             }
