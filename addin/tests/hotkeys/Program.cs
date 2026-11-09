@@ -42,9 +42,10 @@ Check(backend.Keys.Count == 0, "closing releases hotkeys");
 string folder = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
 try {
     string path = Path.Combine(folder, "UserA", "portable.json");
-    SettingsFile.Write(path, JsonSerializer.Serialize(new { Folder = "Library", Favorites = new[] { "fav" }, Entries = new { main = "Module.main" }, Hotkeys = original }));
+    SettingsFile.Write(path, JsonSerializer.Serialize(new { Folder = "Library", Favorites = new[] { "fav" }, Entries = new { main = "Module.main" }, Descriptions = new Dictionary<string, string> { [original.Keys.Single()] = "Описание\nПодготовка чертежа" }, Hotkeys = original }));
     var loaded = JsonDocument.Parse(File.ReadAllText(path));
     Check(loaded.RootElement.GetProperty("Hotkeys").GetProperty(original.Keys.Single()).GetInt32() == r, "saved binding survives disk reload");
+    Check(loaded.RootElement.GetProperty("Descriptions").GetProperty(original.Keys.Single()).GetString() == "Описание\nПодготовка чертежа", "multiline description persists by full macro path");
     Check(loaded.RootElement.GetProperty("Entries").GetProperty("main").GetString() == "Module.main", "other settings retained");
     SettingsFile.Write(path, JsonSerializer.Serialize(new { Hotkeys = new Dictionary<string, int>() }));
     Check(JsonDocument.Parse(File.ReadAllText(path)).RootElement.GetProperty("Hotkeys").EnumerateObject().Count() == 0, "removal persists");
@@ -96,6 +97,13 @@ view.Invalidate();
 Check(view.NeedsUpdate("Сборки", false, Array.Empty<string>()), "favorites or catalog refresh invalidates cache");
 Check(LibraryViewState.FullWidth(900, false, 17) == LibraryViewState.FullWidth(883, true, 17), "scrollbar toggle does not change layout width");
 Check(LibraryViewState.FullWidth(720, false, 17) == LibraryViewState.FullWidth(703, true, 17), "scrollbar does not cross responsive breakpoint");
+Check(DocumentStatus.Name(@"C:\CAD\УГВС-300М.SLDASM", "wrong") == "УГВС-300М", "saved assembly uses active full path");
+Check(DocumentStatus.Name(@"C:\CAD\УГВС-300М.SLDDRW", "wrong") == "УГВС-300М", "drawing name without CAD suffix");
+Check(DocumentStatus.Name("", "Сборка1 *") == "Сборка1", "unsaved active title without changed marker");
+Check(DocumentStatus.Name("", "УГВС.300М") == "УГВС.300М", "dots in unsaved document name retained");
+Check(DocumentStatus.Name(null, null) == "Без имени", "missing name fallback");
+Check(DocumentStatus.TypeName(1) == "Деталь" && DocumentStatus.TypeName(2) == "Сборка" && DocumentStatus.TypeName(3) == "Чертёж", "active document types");
+Check(DocumentStatus.Name(@"D:\Other\Другая модель.sldprt", "old title") == "Другая модель", "switching active model replaces old name");
 Console.WriteLine($"{count} hotkey/persistence checks passed.");
 
 sealed class FakeBackend : IHotkeyBackend
