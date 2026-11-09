@@ -94,7 +94,7 @@ namespace SWToolsHub.Portable
         private bool hoverReady;
         private bool stopping;
         private float hoverProgress;
-        private readonly Timer hoverDelay = new Timer { Interval = 180 };
+        private readonly Timer hoverDelay = new Timer { Interval = 90 };
         private readonly Timer hoverAnimation = new Timer { Interval = 15 };
         public RoundedButton()
         {
