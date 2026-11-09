@@ -86,7 +86,9 @@ namespace SWToolsHub.Portable
             bool card = BackColor.ToArgb() == UiTheme.Card.ToArgb() || BackColor.ToArgb() == UiTheme.Selected.ToArgb();
             bool accentActive = AccentHover && hovered && Enabled;
             var hoverColor = accentActive ? UiTheme.AccentInk : IconOnly ? UiTheme.IconHover : card ? UiTheme.Selected : UiTheme.Background;
-            using (var path = UiTheme.Shape(new RectangleF(1, 1, Width - 2, Height - 2), IconOnly ? Math.Min(Width, Height) / 2f : 16))
+            float diameter = Math.Max(1, Math.Min(Width, Height) - 2);
+            var shapeBounds = IconOnly ? new RectangleF((Width - diameter) / 2, (Height - diameter) / 2, diameter, diameter) : new RectangleF(1, 1, Width - 2, Height - 2);
+            using (var path = UiTheme.Shape(shapeBounds, IconOnly ? diameter / 2 : 16))
             using (var fill = new SolidBrush(hovered && Enabled ? hoverColor : BackColor))
             using (var pen = new Pen(accentActive ? UiTheme.AccentInk : Focused ? UiTheme.IconInk : IconOnly ? UiTheme.IconBorder : UiTheme.Border, Focused ? 2 : 1)) {
                 e.Graphics.FillPath(fill, path); if (!Borderless || Focused) e.Graphics.DrawPath(pen, path);

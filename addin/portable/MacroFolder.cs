@@ -6,7 +6,7 @@ namespace SWToolsHub.Portable
 {
     internal static class MacroFolder
     {
-        public static readonly string[] Modules = { "Детали", "Чертежи", "Сборки", "Лазер" };
+        public static readonly string[] Modules = { "Избранное", "Чертежи", "Сборки", "Лазер" };
         public static void EnsureModules(string folder)
         {
             foreach (var module in Modules) Directory.CreateDirectory(Path.Combine(folder, module));
@@ -19,6 +19,9 @@ namespace SWToolsHub.Portable
                 var path = Path.Combine(folder, module);
                 if (Directory.Exists(path)) Read(path, module, result);
             }
+            // Keep existing libraries readable without moving files or invalidating saved paths.
+            var legacy = Path.Combine(folder, "Детали");
+            if (Directory.Exists(legacy)) Read(legacy, "Детали", result);
             return result.OrderBy(m => m.name, StringComparer.CurrentCultureIgnoreCase).ToArray();
         }
         private static void Read(string folder, string category, List<Macro> result)

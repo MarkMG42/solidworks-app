@@ -150,7 +150,7 @@ namespace SWToolsHub.Portable
         }
         private void ConfigureIcon(Button button, string icon, string description)
         {
-            StyleButton(button); ((RoundedButton)button).IconOnly = true; ((RoundedButton)button).AccentHover = icon == "play"; button.BackColor = UiTheme.IconSurface; button.ForeColor = UiTheme.IconInk; button.Text = ""; button.Dock = DockStyle.Fill;
+            StyleButton(button); ((RoundedButton)button).IconOnly = true; ((RoundedButton)button).AccentHover = icon == "play" || icon == "folder"; button.BackColor = UiTheme.IconSurface; button.ForeColor = UiTheme.IconInk; button.Text = ""; button.Dock = DockStyle.Fill;
             ((RoundedButton)button).IconSize = Px(24);
             button.Margin = new Padding(Px(2)); button.Padding = new Padding(0);
             button.Image = DrawIcon(icon); button.ImageAlign = ContentAlignment.MiddleCenter;
@@ -161,7 +161,7 @@ namespace SWToolsHub.Portable
         {
             var image = new Bitmap(72, 72);
             using (var g = Graphics.FromImage(image))
-            using (var pen = new Pen(kind == "folder" ? UiTheme.IconInk : UiTheme.AccentInk, 1.35f)) {
+            using (var pen = new Pen(UiTheme.AccentInk, 1.35f)) {
                 g.ScaleTransform(3, 3);
                 g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
                 pen.StartCap = pen.EndCap = System.Drawing.Drawing2D.LineCap.Round;
@@ -230,7 +230,10 @@ namespace SWToolsHub.Portable
                 for (int i = 0; i < heights.Length; i++) shell.RowStyles[i].Height = heights[i];
                 header.Padding = Space(20, 12, 16, 12);
                 header.ColumnStyles[1].Width = Px(40);
-                foreach (var button in header.Controls.OfType<RoundedButton>()) { button.IconSize = Px(24); button.Margin = new Padding(Px(2)); }
+                foreach (var button in header.Controls.OfType<RoundedButton>()) {
+                    button.Dock = DockStyle.None; button.Anchor = AnchorStyles.None;
+                    button.Size = new Size(Px(36), Px(36)); button.IconSize = Px(24); button.Margin = new Padding(Px(2));
+                }
                 searchBox.Padding = Space(12, 12, 12, 8); searchBox.Margin = Space(20, 0, 20, 8);
                 heading.Padding = Space(20, 0, 0, 0);
                 moduleGrid.Margin = Space(20, 4, 20, 8);
