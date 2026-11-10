@@ -19,6 +19,12 @@ namespace SWToolsHub.Portable
             if (module.Length == 0 || procedure.Length == 0) return null;
             return new MacroEntry { Module = module, Procedure = procedure };
         }
+        public static MacroEntry AutoSelect(MacroEntry[] methods, string preferred)
+        {
+            if (methods.Length == 1) return methods[0];
+            if (methods.Length == 0) return Parse(preferred);
+            return null;
+        }
         public static MacroEntry[] FromCom(object value)
         {
             var results = new List<MacroEntry>();

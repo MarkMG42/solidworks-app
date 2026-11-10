@@ -46,6 +46,13 @@ class Tests {
    Check(MacroEntry.FromCom(array).Length == 2);
    Check(MacroEntry.Parse(".main") == null && MacroEntry.Parse("A.") == null);
    Check(MacroEntry.Parse("  InsertWeldWithHoles.start  ").Module == "InsertWeldWithHoles");
+   Check(MacroEntry.AutoSelect(MacroEntry.FromCom("Only.main"), "Old.start").FullName == "Only.main");
+   Check(MacroEntry.AutoSelect(MacroEntry.FromCom(null), "Known.start").FullName == "Known.start");
+   Check(MacroEntry.AutoSelect(MacroEntry.FromCom(null), null) == null);
+   Check(MacroEntry.AutoSelect(MacroEntry.FromCom(new[] { "A.main", "B.main" }), "A.main") == null);
+   Check(MacroEntry.AutoSelect(MacroEntry.FromCom(new[] { "A.main", "A.helper" }), null) == null);
+   Check(MacroEntry.AutoSelect(MacroEntry.FromCom(new[] { "A.main", "a.MAIN" }), null).FullName == "A.main");
+   Check(MacroEntry.AutoSelect(MacroEntry.FromCom(null), "invalid") == null);
    var app = Path.Combine(root, "New", "SW-Assistant");
    var local = Path.Combine(app, "Library", "Macros");
    MacroFolder.EnsureModules(local);

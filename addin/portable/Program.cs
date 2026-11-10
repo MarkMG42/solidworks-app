@@ -369,10 +369,10 @@ namespace SWToolsHub.Portable
                 if (selectedMacro?.id == macro.id) name.BackColor = UiTheme.Selected;
                 name.Click += (s, e) => { selectedMacro = macro; status.Text = "Выбран: " + macro.name; };
                 var play = MakeButton("");
-                ConfigureIcon(play, "play", "Выбрать процедуру и запустить: " + macro.name);
+                ConfigureIcon(play, "play", "Запустить: " + macro.name);
                 play.Tag = "run"; play.Enabled = connectionReady;
                 play.Dock = DockStyle.None; play.Anchor = AnchorStyles.None; play.Size = new Size(Px(46), Px(46));
-                play.Click += (s, e) => { selectedMacro = macro; RunSelected(macro, true); };
+                play.Click += (s, e) => { selectedMacro = macro; RunSelected(macro); };
                 row.Controls.Add(play, 0, 0); row.Controls.Add(name, 1, 0); row.Controls.Add(shortcutField, 2, 0); row.Controls.Add(star, 3, 0); content.Controls.Add(row);
             }
             if (visible.Length == 0) content.Controls.Add(new Label { Text = macros.Length == 0 ? "Библиотека макросов пуста\n" + macroFolder + "\nВыберите папку библиотеки кнопкой папки." : home ? "Нажмите ☆ рядом с макросом в разделе, чтобы добавить его в избранное." : "Макросов пока нет. Добавьте .swp в папку раздела или измените запрос поиска.", Margin = new Padding(0), Width = width, Height = Px(100), ForeColor = Muted });
@@ -526,7 +526,7 @@ namespace SWToolsHub.Portable
             base.WndProc(ref m);
         }
         private void ShowError(string text) { status.Text = text; MessageBox.Show(this, text, "SW-Assistant", MessageBoxButtons.OK, MessageBoxIcon.Warning); }
-        private void RunSelected(Macro selected, bool chooseEntry = false)
+        private void RunSelected(Macro selected)
         {
             if (busy) return;
             if (selected == null) { ShowError("Выберите инструмент."); return; }
@@ -544,22 +544,23 @@ namespace SWToolsHub.Portable
                 catch (COMException) { throw new InvalidOperationException("Не удалось подключиться к SolidWorks. Откройте SolidWorks обычным способом, без запуска от администратора, затем повторите. При нескольких экземплярах оставьте один."); }
                 document = sw.IActiveDoc2;
                 if (document == null || (macro.requiredDocument == "drawing" && document.GetType() != 3)) throw new InvalidOperationException("Откройте подходящий чертёж в SolidWorks. Деталь и сборка не подходят.");
-                string entry;
-                if (!chooseEntry && settings.Entries.TryGetValue(path, out entry)) {
-                    int split = entry.LastIndexOf('.');
-                    if (split > 0) { macro.module = entry.Substring(0, split); macro.procedure = entry.Substring(split + 1); }
-                }
-                if (chooseEntry || string.IsNullOrWhiteSpace(macro.module)) {
-                    string preferred = null;
-                    if (!string.IsNullOrWhiteSpace(macro.module)) preferred = macro.module + "." + macro.procedure;
-                    string saved;
-                    if (settings.Entries.TryGetValue(path, out saved)) preferred = saved;
+                string preferred = string.IsNullOrWhiteSpace(macro.module) ? null : macro.module + "." + macro.procedure;
+                string saved;
+                if (settings.Entries.TryGetValue(path, out saved)) preferred = saved;
+                MacroEntry[] methods;
+                try { methods = MacroEntry.FromCom(sw.GetMacroMethods(path, 0)); }
+                catch (COMException) { methods = new MacroEntry[0]; }
+                var chosen = MacroEntry.AutoSelect(methods, preferred);
+                if (methods.Length > 1) {
                     using (var dialog = new EntryDialog(macro.name, () => sw.GetMacroMethods(path, 0), preferred)) {
                         if (dialog.ShowDialog(this) != DialogResult.OK) return;
-                        var chosen = MacroEntry.Parse(dialog.Entry);
-                        macro.module = chosen.Module; macro.procedure = chosen.Procedure;
-                        settings.Entries[path] = chosen.FullName; SaveSettings();
+                        chosen = MacroEntry.Parse(dialog.Entry);
                     }
+                }
+                if (chosen == null) throw new InvalidOperationException("SolidWorks не вернул точку входа макроса, а сохранённой или известной процедуры нет. Запуск невозможен без имени модуля и процедуры.");
+                macro.module = chosen.Module; macro.procedure = chosen.Procedure;
+                if (!settings.Entries.TryGetValue(path, out saved) || !string.Equals(saved, chosen.FullName, StringComparison.OrdinalIgnoreCase)) {
+                    settings.Entries[path] = chosen.FullName; SaveSettings();
                 }
                 status.Text = "Макрос выполняется…"; status.Refresh();
                 // The user may switch documents while choosing an entry point.
