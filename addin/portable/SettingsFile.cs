@@ -5,22 +5,26 @@ namespace SWToolsHub.Portable
 {
     internal static class SettingsFile
     {
-        public static string UserPath(string localData) => Path.Combine(localData, "SW-Assistant", "portable.json");
-        public static void MigrateUserSettings(string localData)
+        public static string PortablePath(string appRoot, string userId)
         {
-            string oldFolder = Path.Combine(localData, "SWToolsHub");
-            string newFolder = Path.Combine(localData, "SW-Assistant");
-            if (!Directory.Exists(oldFolder)) return;
-            string oldFile = Path.Combine(oldFolder, "portable.json");
-            string newFile = UserPath(localData);
-            if (File.Exists(oldFile)) {
-                Directory.CreateDirectory(newFolder);
-                if (!File.Exists(newFile)) File.Move(oldFile, newFile);
-                else if (File.ReadAllBytes(oldFile).SequenceEqual(File.ReadAllBytes(newFile))) File.Delete(oldFile);
-                else File.Move(oldFile, Path.Combine(newFolder, "portable.legacy." + Guid.NewGuid().ToString("N") + ".json"));
+            using (var hash = System.Security.Cryptography.SHA256.Create()) {
+                string key = BitConverter.ToString(hash.ComputeHash(System.Text.Encoding.UTF8.GetBytes(userId))).Replace("-", "").Substring(0, 16);
+                return Path.Combine(appRoot, "portable." + key + ".json");
             }
-            // Never delete user macros or unknown files remaining in the old folder.
-            if (!Directory.EnumerateFileSystemEntries(oldFolder).Any()) Directory.Delete(oldFolder);
+        }
+        public static void MigrateUserSettings(string localData, string target)
+        {
+            foreach (string name in new[] { "SW-Assistant", "SWToolsHub" }) {
+                string oldFolder = Path.Combine(localData, name);
+                if (!Directory.Exists(oldFolder)) continue;
+                string oldFile = Path.Combine(oldFolder, "portable.json");
+                if (File.Exists(oldFile)) {
+                    if (!File.Exists(target)) File.Move(oldFile, target);
+                    else if (File.ReadAllBytes(oldFile).SequenceEqual(File.ReadAllBytes(target))) File.Delete(oldFile);
+                    else File.Move(oldFile, Path.Combine(Path.GetDirectoryName(target), Path.GetFileNameWithoutExtension(target) + ".legacy." + Guid.NewGuid().ToString("N") + ".json"));
+                }
+                if (!Directory.EnumerateFileSystemEntries(oldFolder).Any()) Directory.Delete(oldFolder);
+            }
         }
         public static void Write(string path, string json)
         {

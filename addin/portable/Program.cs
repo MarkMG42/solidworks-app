@@ -60,7 +60,7 @@ namespace SWToolsHub.Portable
         private static readonly Color Foreground = UiTheme.Text;
         private static readonly Color Muted = UiTheme.Muted;
         private readonly Timer refresh = new Timer { Interval = 2000 };
-        private readonly string settingsPath = SettingsFile.UserPath(System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData));
+        private readonly string settingsPath = SettingsFile.PortablePath(AppDomain.CurrentDomain.BaseDirectory, System.Security.Principal.WindowsIdentity.GetCurrent().User.Value);
         private Settings settings = new Settings();
         public sealed class Settings {
             public string Folder { get; set; }
@@ -155,7 +155,7 @@ namespace SWToolsHub.Portable
             search.TextChanged += (s, e) => Filter();
             FormClosing += (s, e) => { if (busy) e.Cancel = true; else closing = true; };
             Shown += (s, e) => {
-                try { SettingsFile.MigrateUserSettings(System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData)); }
+                try { SettingsFile.MigrateUserSettings(System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData), settingsPath); }
                 catch (Exception ex) { ShowError("Не удалось перенести настройки в SW-Assistant: " + ex.Message); Close(); return; }
                 try {
                     if (File.Exists(settingsPath)) settings = new JavaScriptSerializer().Deserialize<Settings>(File.ReadAllText(settingsPath)) ?? new Settings();
@@ -166,7 +166,7 @@ namespace SWToolsHub.Portable
                 settings.Hotkeys = new Dictionary<string, int>(settings.Hotkeys ?? new Dictionary<string, int>(), StringComparer.OrdinalIgnoreCase);
                 macroFolder = MacroFolder.ResolveStartup(settings.Folder, root);
                 folderLabel.Text = macroFolder;
-                try { MacroFolder.EnsureModules(macroFolder); } catch (Exception ex) { status.Text = "Не удалось создать папки разделов: " + ex.Message; }
+                try { if (string.Equals(Path.GetFullPath(macroFolder), Path.GetFullPath(Path.Combine(root, "Library", "Macros")), StringComparison.OrdinalIgnoreCase)) MacroFolder.EnsureModules(macroFolder); } catch (Exception ex) { status.Text = "Не удалось создать папки разделов: " + ex.Message; }
                 ReloadFolder(); RefreshLayout(); refresh.Start();
                 RestoreHotkeys(); RefreshConnection();
             };
