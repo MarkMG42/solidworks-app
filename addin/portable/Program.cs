@@ -45,6 +45,11 @@ namespace SWToolsHub.Portable
         private readonly Label count = new Label { Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft };
         private readonly Panel viewport = new StableViewport { Dock = DockStyle.Fill, AutoScroll = true };
         private TableLayoutPanel shell;
+        private bool calculationsActive;
+        private readonly Panel calculationHost = new Panel { Dock = DockStyle.Fill, Visible = false };
+        private readonly Dictionary<int, CalculationView> calculationViews = new Dictionary<int, CalculationView>();
+        private CalculationBook[] calculationBooks;
+
         private TableLayoutPanel header;
         private RoundedPanel searchBox;
         private RoundedPanel libraryFrame;
@@ -137,6 +142,7 @@ namespace SWToolsHub.Portable
             libraryFrame.Controls.Add(content);
             shell.Controls.Add(moduleGrid, 0, 3); shell.Controls.Add(libraryFrame, 0, 4);
             viewport.Controls.Add(shell); Controls.Add(viewport);
+            InitializeCalculations();
             viewport.SizeChanged += (s, e) => RefreshLayout();
             choose.Click += (s, e) => {
                 if (busy) return;
@@ -150,7 +156,7 @@ namespace SWToolsHub.Portable
                     folderLabel.Text = macroFolder; ReloadFolder();
                 } catch (Exception ex) { ShowError("Не удалось выбрать папку: " + ex.Message); }
             };
-            refresh.Tick += (s, e) => { ReloadFolder(); RefreshConnection(); };
+            refresh.Tick += (s, e) => { if (!calculationsActive) { ReloadFolder(); RefreshConnection(); } };
             FormClosed += (s, e) => { refresh.Dispose(); hotkeys?.Dispose(); tips.Dispose(); titleFont.Dispose(); connectionFont.Dispose(); };
             search.TextChanged += (s, e) => Filter();
             FormClosing += (s, e) => { if (busy) e.Cancel = true; else closing = true; };
@@ -170,6 +176,42 @@ namespace SWToolsHub.Portable
                 ReloadFolder(); RefreshLayout(); refresh.Start();
                 RestoreHotkeys(); RefreshConnection();
             };
+        }
+        private void InitializeCalculations()
+        {
+            // Keep macro UI intact; the new navigation occupies only the left edge.
+            var navigation = new FlowLayoutPanel { Dock = DockStyle.Left, Width = 170, Padding = new Padding(6, 14, 6, 6), FlowDirection = FlowDirection.TopDown, WrapContents = false, AutoScroll = true, BackColor = Background };
+            Controls.Add(calculationHost); Controls.Add(navigation);
+            var macroButton = MakeButton("Макросы"); macroButton.Width = 145;
+            navigation.Controls.Add(macroButton);
+            macroButton.Click += (s, e) => {
+                if (busy || editingHotkeys) return;
+                calculationsActive = false; calculationHost.Visible = false; viewport.Visible = true;
+                ReloadFolder(); RefreshLayout(); RefreshConnection();
+            };
+            Action<int> show = index => {
+                if (busy || editingHotkeys) return;
+                CalculationView view;
+                if (!calculationViews.TryGetValue(index, out view)) {
+                    view = new CalculationView(calculationBooks[index]);
+                    calculationViews.Add(index, view); calculationHost.Controls.Add(view);
+                }
+                foreach (Control child in calculationHost.Controls) child.Visible = child == view;
+                calculationsActive = true; viewport.Visible = false; calculationHost.Visible = true; view.BringToFront();
+            };
+            string[] titles = { "Стенка трубы", "Длина болта", "Балка", "Болты и швы", "Высота узла" };
+            for (int i = 0; i < titles.Length; i++) {
+                int index = i;
+                var button = MakeButton(titles[i]); button.Width = 145; button.Height = 54;
+                button.Click += (sender, args) => {
+                    if (busy || editingHotkeys) return;
+                    try {
+                        if (calculationBooks == null) calculationBooks = CalculationView.LoadBooks();
+                        show(index);
+                    } catch (Exception ex) { ShowError("Не удалось открыть расчёт: " + ex.Message); }
+                };
+                navigation.Controls.Add(button);
+            }
         }
         private void Filter()
         {
@@ -517,7 +559,7 @@ namespace SWToolsHub.Portable
         {
             if (m.Msg == 0x0312) { // WM_HOTKEY arrives on the main STA UI thread.
                 string path = hotkeys?.Resolve(m.WParam.ToInt32());
-                if (path != null && !busy && !editingHotkeys && Enabled) {
+                if (path != null && !busy && !editingHotkeys && !calculationsActive && Enabled) {
                     // Do not queue a run: a stale registration or changed library cannot redirect it.
                     RunSelected(new Macro { id = path });
                 }

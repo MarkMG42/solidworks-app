@@ -2,6 +2,10 @@
 
 Переносимое Windows-приложение для запуска локальных VBA-макросов в открытом SolidWorks. Итоговое состояние на 9 ноября 2026.
 
+## Расчёты из Excel
+
+Версия с левым переключением «Макросы / Расчёты» и пятью расчётами сохранена отдельно: [пакет с расчётами](installer/calculations/SW-Assistant-Calculations.zip), [инструкция и проверка](installer/calculations/README.md). Для расчётов Excel и запущенный SolidWorks не нужны; программа требует Windows x64 и .NET Framework 4.8.
+
 ## Скачать программу
 
 [Скачать SW-Assistant-Portable.zip](https://github.com/MarkMG42/solidworks-app/raw/refs/heads/main/installer/SW-Assistant-Portable.zip)

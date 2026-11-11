@@ -7,6 +7,7 @@
     <SolidWorksInteropPath Condition="'$(SolidWorksInteropPath)' == ''">C:\Program Files\SOLIDWORKS Corp\SOLIDWORKS\api\redist</SolidWorksInteropPath>
   </PropertyGroup>
   <ItemGroup>
+    <EmbeddedResource Include="Calculations/Workbooks.json" LogicalName="CalculationWorkbooks.json" />
     <EmbeddedResource Include="Assets/AppIcon.ico" LogicalName="AppIcon.ico" />
     <Content Include="Fonts/SourceSans3-Regular.ttf;Fonts/SourceSans3-Semibold.ttf;Fonts/LICENSE.md"><CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory></Content>
     <Reference Include="System.Web.Extensions" />

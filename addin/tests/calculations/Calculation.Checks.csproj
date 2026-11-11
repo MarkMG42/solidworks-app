@@ -1,0 +1,4 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><TargetFramework>net8.0</TargetFramework><OutputType>Exe</OutputType><EnableDefaultCompileItems>false</EnableDefaultCompileItems></PropertyGroup>
+  <ItemGroup><Compile Include="../../portable/CalculationEngine.cs" Link="CalculationEngine.cs"/><Compile Include="Program.cs"/><EmbeddedResource Include="../../portable/Calculations/Workbooks.json" LogicalName="Workbooks.json"/><EmbeddedResource Include="SpreadsheetScenarios.json" LogicalName="SpreadsheetScenarios.json"/></ItemGroup>
+</Project>

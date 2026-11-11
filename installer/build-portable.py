@@ -6,6 +6,7 @@ import zipfile
 root = Path(__file__).resolve().parents[1]
 bin_dir = root / 'addin/portable/bin/Release/net48'
 files = {
+    'РАСЧЕТЫ.txt': root / 'installer/calculations/РАСЧЕТЫ.txt',
     'Fonts/SourceSans3-Semibold.ttf': bin_dir / 'Fonts/SourceSans3-Semibold.ttf',
     'Fonts/SourceSans3-Regular.ttf': bin_dir / 'Fonts/SourceSans3-Regular.ttf',
     'Fonts/LICENSE.md': bin_dir / 'Fonts/LICENSE.md',
