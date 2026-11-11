@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#fdfcf8"><meta name="description" content="SW-Assistant: пять инженерных расчётов из Excel в браузере.">
+  <meta name="theme-color" content="#101f37"><meta name="description" content="SW-Assistant: пять инженерных расчётов из Excel в браузере.">
   <title>SW-Assistant — расчёты</title>
   <link rel="icon" href="./favicon.ico"><script type="module" src="/src/app.js"></script>
 </head>
@@ -30,7 +30,7 @@
         <div class="sheet-bar"><label for="sheet">Лист</label><select id="sheet"></select><span id="sheet-kind"></span></div>
         <p class="hint">Изменяйте значения в полях. Результаты пересчитываются автоматически.</p>
         <div id="validation" class="validation" role="status" aria-live="polite" hidden></div>
-        <div id="table-scroll" class="table-scroll" tabindex="0" aria-label="Таблица расчёта"><table id="worksheet"></table></div>
+        <div class="workspace" id="workspace"><div id="table-scroll" class="table-scroll" tabindex="0" aria-label="Таблица расчёта"><table id="worksheet"></table></div><aside id="result-cards" class="result-cards" aria-label="Результаты расчёта" hidden></aside></div>
         <div class="table-footer"><span id="source"></span><div id="pagination" hidden><button id="previous" type="button">←</button><span id="page-info"></span><button id="next" type="button">→</button></div></div>
         <div class="calculation-footer"><span id="storage-status">Ввод сохраняется в этом браузере</span><button id="original" class="text-button" type="button" hidden>Вернуть встроенные формулы</button></div>
       </section>

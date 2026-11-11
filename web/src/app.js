@@ -119,9 +119,33 @@ function renderSheet() {
         } else if (c.Expression) { const output=element('span','result'); output.title=c.Formula; output.dataset.result=c.Address; td.append(output); }
         else td.textContent=valueText(c.Value,c);
       } tr.append(td);
-    } body.append(tr);
+    }
+    const inputCell=[...tr.cells].find(td=>td.querySelector('.cell-input'));
+    if(inputCell){for(const td of [...tr.cells].slice(1)){if(td!==inputCell && td!==tr.cells[1] && !(td.cellIndex===inputCell.cellIndex+1 && td.textContent.trim().length>0 && td.textContent.trim().length<12)){td.classList.add('extra-cell');if(td.textContent.trim())inputCell.title=td.textContent.trim();}}}
+    if(rowCells.some(c=>c.Expression) && !rowCells.some(c=>c.Editable))tr.classList.add('output-row');
+    if(section || !rowCells.length)tr.classList.add('section-row');
+    body.append(tr);
   }
   table.append(body);
+  const dashboard=!engine.book.Custom && !sheet.ReferenceOnly && columns<=4;
+  $('workspace').classList.toggle('dashboard',dashboard);
+  const cards=$('result-cards');cards.replaceChildren();cards.hidden=!dashboard;
+  if(dashboard){
+    colgroup.replaceChildren();for(const width of columns===2?[60,40]:[55,32,13]){const col=element('col');col.style.width=width+'%';colgroup.append(col);}
+    const sectionCell=table.querySelector('.section-row:first-child td');if(sectionCell)sectionCell.colSpan=Math.min(columns,3);
+    table.setAttribute('aria-label','Исходные данные и полная таблица расчёта');
+    const heading=element('h2',null,'Результаты расчёта');cards.append(heading);
+    for(const c of sheet.Cells.filter(c=>c.Expression)){
+      const card=element('div','metric-card');
+      const label=sheet.Cells.filter(v=>v.Row===c.Row && v.Column<c.Column && !v.Expression).map(v=>v.Value).filter(v=>v!=null).join(' · ');
+      card.append(element('div','metric-label',label || c.Address));
+      const output=element('span','result');output.dataset.summary=c.Address;card.append(output);
+      const unit=sheet.Cells.find(v=>v.Row===c.Row && v.Column===c.Column+1 && !v.Expression && !v.Editable);
+      if(unit?.Value)card.append(element('small','metric-unit',unit.Value));
+      cards.append(card);
+    }
+  }
+
   $('source').textContent = `Источник: ${engine.book.Source}` + (engine.book.Sha256 !== catalog[activeId]?.sha256 ? ' · ваш Excel' : '');
   $('pagination').hidden = !paginated || rows<=PAGE_SIZE;
   $('page-info').textContent=`Строки ${first}–${last} из ${rows}`; $('previous').disabled=page===0; $('next').disabled=last>=rows;
@@ -136,13 +160,13 @@ function updateResults() {
   const engine=selectedEngine(),s=activeSheet;if(!engine||!s)return;
   const invalid=workbookIssue(engine);
   const cellMap=new Map(s.Cells.map(c=>[c.Address,c])); let errorMessage='';
-  for (const output of $('worksheet').querySelectorAll('[data-result]')) {
-    const c=cellMap.get(output.dataset.result); output.className='result';
+  for (const output of $('calculator').querySelectorAll('[data-result],[data-summary]')) {
+    const c=cellMap.get(output.dataset.result || output.dataset.summary); output.className='result';if(output.dataset.summary)output.parentElement.classList.remove('status-card','failed-card');
     try {
       if(invalid){output.textContent='Проверьте ввод';output.classList.add('error');continue;}
       const value=engine.get(s.Name,c.Address);output.textContent=valueText(value,c);output.title=c.Formula;
-      if(['ПРОХОДИТ','Обеспечено'].includes(value))output.classList.add('pass');
-      if(['НЕ ПРОХОДИТ','Не обеспечено','Ошибка исходных данных'].includes(value))output.classList.add('fail');
+      if(['ПРОХОДИТ','Обеспечено'].includes(value)){output.classList.add('pass');if(output.dataset.summary)output.parentElement.classList.add('status-card');}
+      if(['НЕ ПРОХОДИТ','Не обеспечено','Ошибка исходных данных'].includes(value)){output.classList.add('fail');if(output.dataset.summary)output.parentElement.classList.add('status-card','failed-card');}
     }catch(error){output.textContent='Ошибка расчёта';output.title=error.message;output.classList.add('error');errorMessage=`${c.Address}: ${error.message}`;}
   }
   $('validation').hidden=!(invalid||errorMessage);$('validation').textContent=invalid||errorMessage;
