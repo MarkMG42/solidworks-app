@@ -1,4 +1,4 @@
-import { Engine, FUNCTIONS, CalculationError, position, address } from './engine.js';
+import { Engine, checkArguments, FUNCTIONS, CalculationError, position, address } from './engine.js';
 const precedence = { '=':1, '<>':1, '<':1, '>':1, '<=':1, '>=':1, '&':2, '+':3, '-':3, '*':4, '/':4, '^':5 };
 function tokenize(formula) {
   const tokens = []; let source = formula.replace(/^=/, '');
@@ -25,12 +25,12 @@ export function parseFormula(formula, names = {}) {
       i++; const args = [];
       while (tokens[i] !== ')') { args.push(expr(0, depth + 1)); if (tokens[i] === ',') i++; else break; }
       if (tokens[i++] !== ')') throw new CalculationError('Неверные аргументы функции');
-      n = { Op: op, Args: args };
+      checkArguments(op,args.length); n = { Op: op, Args: args };
     } else if (token?.startsWith('"')) n = { Op:'STR', Text:token.slice(1,-1).replaceAll('""','"') };
-    else if (/^(?:\d|\.\d)/.test(token || '')) n = { Op:'NUM', Number:Number(token) };
+    else if (/^(?:\d|\.\d)/.test(token || '')) { if(!Number.isFinite(Number(token)))throw new CalculationError('Число вне допустимого диапазона'); n = { Op:'NUM', Number:Number(token) }; }
     else if (['TRUE','FALSE'].includes(token?.toUpperCase())) n = { Op:'BOOL', Number:token.toUpperCase() === 'TRUE' ? 1 : 0 };
     else {
-      if (!token || !Object.hasOwn(names, token) && !/^(?:(?:'[^']*(?:''[^']*)*'|[\p{L}_][\p{L}\p{N}_.]*)!)?\$?[a-z]+\$?\d+(?::\$?[a-z]+\$?\d+)?$/iu.test(token)) throw new CalculationError(`Неизвестная ссылка: ${token}`);
+      if (!token || !Object.keys(names).some(name=>name.toUpperCase()===token.toUpperCase()) && !/^(?:(?:'[^']*(?:''[^']*)*'|[\p{L}_][\p{L}\p{N}_.]*)!)?\$?[a-z]+\$?\d+(?::\$?[a-z]+\$?\d+)?$/iu.test(token)) throw new CalculationError(`Неизвестная ссылка: ${token}`);
       n = { Op:'REF', Text:token };
     }
     while (i < tokens.length) {
@@ -79,7 +79,7 @@ export async function importWorkbook(buffer, original, ExcelJS, digest) {
       if (!formula && value == null) return;
       if (++total > 50000 || cell.row > 10000 || cell.col > 100) throw new CalculationError('Таблица слишком большая');
       const oldCell = old?.Cells.find(c => c.Address === cell.address);
-      const c = { Address:cell.address, Row:cell.row, Column:cell.col, Format:cell.numFmt || 'General', Value:value, Formula:formula ? '=' + formula.replace(/^=/,'') : null, Expected:null, Editable:!formula && (custom || !sheet.ReferenceOnly && cell.col === (original.Source.includes('прочность') ? 3 : 2)) };
+      const c = { Address:cell.address, Row:cell.row, Column:cell.col, Format:cell.numFmt || 'General', Value:value, Formula:formula ? '=' + formula.replace(/^=/,'') : null, Expected:formula && cell.result != null ? plain(cell.result) : null, Editable:!formula && (custom || !sheet.ReferenceOnly && cell.col === (original.Source.includes('прочность') ? 3 : 2)) };
       if (formula) {
         try { c.Expression = parseFormula(formula, result.Names); }
         catch (error) { throw new CalculationError(`${ws.name}!${cell.address}: ${error.message}`); }
@@ -89,7 +89,7 @@ export async function importWorkbook(buffer, original, ExcelJS, digest) {
       if (oldCell?.Options) c.Options = oldCell.Options;
       sheet.Cells.push(c);
     }));
-    if (sheet.Cells.length) result.Sheets.push(sheet);
+    result.Sheets.push(sheet);
   }
   for (const sheet of result.Sheets) for (const c of sheet.Cells) {
     const options = listValues(c._validation, result); if (options?.length) c.Options = options;
@@ -101,10 +101,12 @@ export async function importWorkbook(buffer, original, ExcelJS, digest) {
     }
     delete c._validation;
   }
-  if (!result.Sheets.length) throw new CalculationError('В файле нет заполненных листов');
+  if (!total) throw new CalculationError('В файле нет заполненных листов');
   const engine = new Engine(result);
   for (const s of result.Sheets) for (const c of s.Cells.filter(c => c.Expression)) {
-    try { engine.get(s.Name,c.Address); }
+    try { const actual=engine.get(s.Name,c.Address), expected=c.Expected;
+      if(expected!=null && !(typeof expected==='number' && typeof actual==='number'?Math.abs(actual-expected)<=1e-8*Math.max(1,Math.abs(expected)):Object.is(actual,expected))) throw new CalculationError('Результат отличается от сохранённого результата Excel. Пересчитайте и сохраните файл в Excel; если отличие сохраняется, этот вариант формулы не поддерживается');
+    }
     catch (error) { throw new CalculationError(`${s.Name}!${c.Address}: ${error.message}. Предыдущие формулы сохранены.`); }
   }
   return result;

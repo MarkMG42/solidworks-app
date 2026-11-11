@@ -5,13 +5,16 @@ from openpyxl import Workbook
 from playwright.sync_api import sync_playwright
 parser=argparse.ArgumentParser();parser.add_argument('--url',required=True);args=parser.parse_args()
 with tempfile.TemporaryDirectory() as directory:
- path=Path(directory)/'Свой.xlsx';w=Workbook();s=w.active;s.title='Расчёт';s.append(['Количество',2,'=B1*Цены!A1']);w.create_sheet('Цены').append([10]);w.save(path)
+ path=Path(directory)/'Свой.xlsx';w=Workbook();s=w.active;s.title='Расчёт';s.append(['Количество',2,'=B1*Цены!A1']);w.create_sheet('Цены').append([10,'=Расчёт!B1*2']);w.save(path)
  bad=Path(directory)/'bad.xlsx';s['C1']='=UNKNOWN(B1)';w.save(bad)
  with sync_playwright() as p:
   b=p.chromium.launch(executable_path=os.environ.get('CHROMIUM_PATH'),headless=True,args=['--no-sandbox']);page=b.new_page(viewport={'width':1100,'height':760});errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
   page.goto(args.url);page.wait_for_selector('#calculator:not([hidden])');page.locator('#custom-file').set_input_files(str(path));page.locator('#name-dialog').wait_for(state='visible');page.locator('#calculation-name').fill('Мой расчёт');page.locator('#name-dialog button[value=ok]').click();page.wait_for_function("document.querySelector('#title').textContent === 'Мой расчёт'")
   output=page.locator('[data-result=C1]');assert output.inner_text()=='20';page.locator('input[data-address=B1]').fill('-3');assert output.inner_text()=='-30';page.reload();page.wait_for_selector('[data-result=C1]');assert output.inner_text()=='-30'
   page.select_option('#sheet','Цены');page.locator('input[data-address=A1]').fill('5');page.select_option('#sheet','Расчёт');assert output.inner_text()=='-15'
+  page.locator('input[data-address=B1]').fill('ошибка');page.select_option('#sheet','Цены');assert page.locator('[data-result=B1]').inner_text()=='Проверьте ввод'
+  page.locator('#csv').click();assert 'Экспорт отменён' in page.locator('#announcement').inner_text()
+  page.select_option('#sheet','Расчёт');page.locator('input[data-address=B1]').fill('-3');assert output.inner_text()=='-15'
   page.locator('#rename-calculation').click();page.locator('#calculation-name').fill('Новое имя');page.locator('#name-dialog button[value=ok]').click();page.wait_for_function("document.querySelector('#title').textContent === 'Новое имя'")
   page.locator('#excel-file').set_input_files(str(bad));page.wait_for_function("document.querySelector('#announcement').textContent.includes('Excel не применён')");assert output.inner_text()=='-15'
   for width in [1440,900,640,390]:

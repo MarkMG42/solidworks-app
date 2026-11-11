@@ -82,7 +82,7 @@ function renderSheet() {
   const engine = selectedEngine(), sheet = activeSheet; if (!engine || !sheet) return;
   $('sheet-kind').textContent = sheet.ReferenceOnly ? 'Только чтение' : 'Исходные данные и результаты';
   const table = $('worksheet'); table.replaceChildren();
-  const columns = Math.max(...sheet.Cells.map(c=>c.Column)), rows = Math.max(...sheet.Cells.map(c=>c.Row));
+  const columns = Math.max(1,...sheet.Cells.map(c=>c.Column)), rows = Math.max(1,...sheet.Cells.map(c=>c.Row));
   const wide = columns > 5; table.style.minWidth = wide ? `${columns*100+36}px` : '';
   const colgroup = element('colgroup'); const lineCol = element('col'); lineCol.style.width = '36px'; colgroup.append(lineCol);
   for (const weight of weights(columns,activeId)) { const col = element('col'); col.style.width = `${weight}%`; colgroup.append(col); }
@@ -127,11 +127,14 @@ function renderSheet() {
   $('page-info').textContent=`Строки ${first}–${last} из ${rows}`; $('previous').disabled=page===0; $('next').disabled=last>=rows;
   updateResults(); $('table-scroll').scrollTo(0,0);
 }
+function workbookIssue(engine){
+ if([...drafts.keys()].some(k=>k.startsWith(`${activeId}:`)))return 'Исправьте отмеченные поля на листах расчёта. Результаты не рассчитаны.';
+ try{for(const sheet of engine.book.Sheets){const error=engine.validate(sheet.Name);if(error)return `${sheet.Name}: ${error}`;}}catch(error){return error.message;}
+ return null;
+}
 function updateResults() {
   const engine=selectedEngine(),s=activeSheet;if(!engine||!s)return;
-  let invalid=null;
-  try { invalid = [...drafts.keys()].some(k=>k.startsWith(s.ReferenceOnly?`${activeId}:`:`${activeId}:${s.Name}:`))?'Исправьте отмеченные поля. Результаты не рассчитаны.':s.ReferenceOnly?engine.book.Sheets.filter(s=>!s.ReferenceOnly).map(s=>engine.validate(s.Name)).find(Boolean):engine.validate(s.Name); }
-  catch(error){invalid=error.message;}
+  const invalid=workbookIssue(engine);
   const cellMap=new Map(s.Cells.map(c=>[c.Address,c])); let errorMessage='';
   for (const output of $('worksheet').querySelectorAll('[data-result]')) {
     const c=cellMap.get(output.dataset.result); output.className='result';
@@ -162,9 +165,9 @@ $('session-file').addEventListener('change',async event=>{
 });
 $('reset').addEventListener('click',async()=>{if(!await confirm('Сбросить ввод?','Вернуть исходные значения всех листов этого расчёта? Формулы останутся текущими.'))return;const e=selectedEngine();e.reset();for(const k of drafts.keys())if(k.startsWith(`${activeId}:`))drafts.delete(k);saveLocal(e);renderSheet();announce('Исходные значения восстановлены.');});
 $('csv').addEventListener('click',()=>{
-  const e=selectedEngine(),s=activeSheet;const rows=Math.max(...s.Cells.map(c=>c.Row)),cols=Math.max(...s.Cells.map(c=>c.Column)),cells=new Map(s.Cells.map(c=>[c.Address,c]));
+  const e=selectedEngine(),s=activeSheet;const rows=Math.max(1,...s.Cells.map(c=>c.Row)),cols=Math.max(1,...s.Cells.map(c=>c.Column)),cells=new Map(s.Cells.map(c=>[c.Address,c]));
   const quote=(v)=>'"'+String(v??'').replaceAll('"','""')+'"';let content=`Источник;${quote(e.book.Source)}\r\nЛист;${quote(s.Name)}\r\n`;
-  const invalid=e.validate(s.Name)||[...drafts.keys()].some(k=>k.startsWith(`${activeId}:${s.Name}:`));
+  const invalid=workbookIssue(e);if(invalid){announce('Экспорт отменён: '+invalid,true);return;}
   for(let r=1;r<=rows;r++){
     const fields=[];for(let col=1;col<=cols;col++){
       const c=cells.get(address(r,col));let raw='',value='';

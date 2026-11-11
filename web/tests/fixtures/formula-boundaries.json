@@ -1,0 +1,73 @@
+{
+  "reference": "LibreOfficeDev 26.8.0.0.alpha0; recalculated XLSX; differences in Boolean/text aggregation and unprefixed CEILING.MATH excluded; not a Microsoft Excel execution",
+  "cases": [
+    {
+      "formula": "ROUND(1.005,2)",
+      "expected": 1.01
+    },
+    {
+      "formula": "ROUND(-1.005,2)",
+      "expected": -1.01
+    },
+    {
+      "formula": "ROUND(2.675,2)",
+      "expected": 2.68
+    },
+    {
+      "formula": "ROUND(-2.5,0)",
+      "expected": -3
+    },
+    {
+      "formula": "ROUND(125,-1)",
+      "expected": 130
+    },
+    {
+      "formula": "TEXT(-2.5,\"0\")",
+      "expected": "-3"
+    },
+    {
+      "formula": "CEILING(-4.3,-2)",
+      "expected": -6
+    },
+    {
+      "formula": "CEILING(-4.3,2)",
+      "expected": -4
+    },
+    {
+      "formula": "COUNT(\"3\",TRUE,\"word\",2)",
+      "expected": 3
+    },
+    {
+      "formula": "IF(\"FALSE\",1,2)",
+      "expected": 2
+    },
+    {
+      "formula": "IF(\"TRUE\",1,2)",
+      "expected": 1
+    },
+    {
+      "formula": "'цены'!a1+1",
+      "expected": 8
+    },
+    {
+      "formula": "2^3^2",
+      "expected": 64
+    },
+    {
+      "formula": "-2^2",
+      "expected": 4
+    },
+    {
+      "formula": "MAX(A30:A32)",
+      "expected": 2
+    },
+    {
+      "formula": "COUNTIF(A30:A32,\"2\")",
+      "expected": 2
+    },
+    {
+      "formula": "COUNTIF(A30:A32,2)",
+      "expected": 1
+    }
+  ]
+}
