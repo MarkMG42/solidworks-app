@@ -69,3 +69,11 @@ dist/assets/exceljs.min-tdmMIeWm.js       929.38 kB │ gzip: 256.38 kB
 Зависимости production: npm audit — 0 известных уязвимостей после override uuid 11.1.1.
 Проверка выполнена под /solidworks-app/, как в GitHub Pages.
 Этот отчёт подтверждает локальную сборку и браузерные проверки, а не успешную публикацию сайта.
+
+GitHub Actions, первый запуск:
+https://github.com/MarkMG42/solidworks-app/actions/runs/43029519202
+Build: SUCCESS — npm ci, 14 наборов численных/импортных тестов, production build и Chromium smoke test на GitHub-hosted runner. Созданы артефакты сайта и browser-screenshots.
+Deploy: FAILED на actions/configure-pages при первом создании сайта. Причина: HttpError: Resource not accessible by integration (create Pages site). Требуется первоначальное включение Pages владельцем: Settings → Pages → Source: GitHub Actions.
+Доступность публичного адреса на этом этапе не подтверждена.
+
+Владелец подтвердил выбор Source: GitHub Actions. Повторная публикация запускается после этого изменения настроек.
