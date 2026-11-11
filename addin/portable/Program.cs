@@ -197,7 +197,7 @@ namespace SWToolsHub.Portable
                     calculationViews.Add(index, view); calculationHost.Controls.Add(view);
                 }
                 foreach (Control child in calculationHost.Controls) child.Visible = child == view;
-                calculationsActive = true; viewport.Visible = false; calculationHost.Visible = true; view.BringToFront();
+                calculationsActive = true; viewport.Visible = false; calculationHost.Visible = true; view.BringToFront(); view.ActivateSheet();
             };
             string[] titles = { "Стенка трубы", "Длина болта", "Балка", "Болты и швы", "Высота узла" };
             for (int i = 0; i < titles.Length; i++) {

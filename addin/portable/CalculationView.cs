@@ -12,8 +12,19 @@ namespace SWToolsHub.Portable
     internal sealed class CalculationView : UserControl
     {
         private readonly CalculationEngine engine;
-        private readonly TabControl tabs = new TabControl { Dock = DockStyle.Fill, Multiline = true };
-        private readonly Label message = new Label { Dock = DockStyle.Bottom, Height = 52, Padding = new Padding(8), AutoEllipsis = true };
+        private readonly ComboBox sheetPicker = new ComboBox { Name = "CalculationSheetPicker", Dock = DockStyle.Fill, DropDownStyle = ComboBoxStyle.DropDownList, IntegralHeight = false, MaxDropDownItems = 12 };
+        private readonly Panel sheetHost = new Panel { Name = "CalculationSheetHost", Dock = DockStyle.Fill, Margin = new Padding(0) };
+        private readonly Label message = new Label { AutoSize = true, Dock = DockStyle.Fill, Padding = new Padding(4, 6, 4, 6), Margin = new Padding(0) };
+        private readonly Label hint = new Label { Text = "Светлые ячейки — ввод. Enter или Tab — применить.", AutoSize = true, Dock = DockStyle.Fill, Margin = new Padding(0, 2, 0, 6) };
+        private readonly FlowLayoutPanel toolbar = new FlowLayoutPanel { Name = "CalculationActions", Dock = DockStyle.Fill, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, WrapContents = true, AutoScroll = false, Margin = new Padding(0) };
+        private CalculationSheet selectedSheet;
+        private bool switchingSheet;
+        private readonly Font compactFont;
+        private sealed class SheetChoice
+        {
+            public CalculationSheet Sheet;
+            public override string ToString() => Sheet.Name + (Sheet.ReferenceOnly ? " · справочник" : "");
+        }
         private readonly Dictionary<CalculationSheet, DataGridView> grids = new Dictionary<CalculationSheet, DataGridView>();
         private bool painting;
         public static CalculationBook[] LoadBooks()
@@ -25,46 +36,94 @@ namespace SWToolsHub.Portable
         public CalculationView(CalculationBook book)
         {
             engine = new CalculationEngine(book);
-            Dock = DockStyle.Fill; BackColor = UiTheme.Background;
-            var toolbar = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 56, Padding = new Padding(6), WrapContents = false, AutoScroll = true };
-            var reset = new Button { Text = "Сбросить ввод", AutoSize = true, Height = 34 };
-            var export = new Button { Text = "Сохранить таблицу…", AutoSize = true, Height = 34 };
-            var saveInput = new Button { Text = "Сохранить ввод…", AutoSize = true, Height = 34 };
-            var openInput = new Button { Text = "Открыть ввод…", AutoSize = true, Height = 34 };
-            toolbar.Controls.Add(reset); toolbar.Controls.Add(saveInput); toolbar.Controls.Add(openInput); toolbar.Controls.Add(export);
+            Dock = DockStyle.Fill; BackColor = UiTheme.Background; AutoScaleMode = AutoScaleMode.Dpi;
+            using (var themeFont = UiTheme.CreateFont()) compactFont = new Font(themeFont.FontFamily, 9f, FontStyle.Regular);
+            Font = compactFont;
+            Disposed += (s, e) => compactFont.Dispose();
+            var layout = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 5, Padding = new Padding(8), Margin = new Padding(0) };
+            layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+            layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            var reset = ActionButton("Сбросить");
+            var export = ActionButton("Экспорт CSV…");
+            var saveInput = ActionButton("Сохранить ввод…");
+            var openInput = ActionButton("Открыть ввод…");
+            toolbar.Controls.AddRange(new Control[] { reset, saveInput, openInput, export });
             saveInput.Click += (s, e) => SessionFile(false);
             openInput.Click += (s, e) => SessionFile(true);
-            toolbar.Controls.Add(new Label { Text = "Изменяйте светлые поля; результаты пересчитываются автоматически", AutoSize = true, Padding = new Padding(8) });
-            Controls.Add(tabs); Controls.Add(message); Controls.Add(toolbar);
-            foreach (var sheet in book.Sheets) {
-                var page = new TabPage(sheet.Name + (sheet.ReferenceOnly ? " (справочно)" : "")) { BackColor = BackColor, Tag = sheet };
-                tabs.TabPages.Add(page);
-            }
-            tabs.SelectedIndexChanged += (s, e) => ShowSheet();
+            var selector = new TableLayoutPanel { Dock = DockStyle.Fill, AutoSize = true, ColumnCount = 2, RowCount = 1, Margin = new Padding(0, 2, 0, 8) };
+            selector.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+            selector.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            selector.Controls.Add(new Label { Text = "Лист", AutoSize = true, Anchor = AnchorStyles.Left, Margin = new Padding(0, 0, 8, 0) }, 0, 0);
+            selector.Controls.Add(sheetPicker, 1, 0);
+            sheetPicker.Margin = new Padding(0); sheetPicker.AccessibleName = "Лист расчёта";
+            hint.ForeColor = UiTheme.Muted;
+            layout.Controls.Add(toolbar, 0, 0); layout.Controls.Add(hint, 0, 1);
+            layout.Controls.Add(selector, 0, 2); layout.Controls.Add(sheetHost, 0, 3); layout.Controls.Add(message, 0, 4);
+            Controls.Add(layout);
+            layout.SizeChanged += (s, e) => {
+                // Bound preferred sizes before measuring wrapped rows. Nothing above
+                // the grid owns a horizontal scrollbar or expands the page width.
+                int width = Math.Max(1, layout.ClientSize.Width - layout.Padding.Horizontal);
+                toolbar.MaximumSize = new Size(width, 0);
+                hint.MaximumSize = new Size(width, 0); message.MaximumSize = new Size(width, 0);
+                sheetPicker.DropDownWidth = Math.Max(1, sheetPicker.Width);
+            };
+            foreach (var sheet in book.Sheets) sheetPicker.Items.Add(new SheetChoice { Sheet = sheet });
+            sheetPicker.SelectedIndexChanged += (s, e) => ShowSheet();
             reset.Click += (s, e) => {
                 if (MessageBox.Show(this, "Вернуть исходные значения всех листов этого расчёта?", "Сброс расчёта", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
                 engine.Reset(); foreach (var pair in grids) FillValues(pair.Key, pair.Value); ShowSheet();
             };
             export.Click += (s, e) => Export();
+            // ComboBox selection is managed and available before native handles exist.
+            // TabControl.SelectedTab could be null in the old constructor, leaving
+            // the first page unpopulated until the user selected another tab.
+            if (sheetPicker.Items.Count > 0) sheetPicker.SelectedIndex = 0;
+        }
+        private static Button ActionButton(string text) => new Button { Text = text, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, Padding = new Padding(8, 4, 8, 4), Margin = new Padding(0, 0, 6, 4) };
+        public void ActivateSheet()
+        {
             ShowSheet();
+            PerformLayout(); sheetHost.PerformLayout();
+        }
+        protected override void OnLoad(EventArgs e)
+        {
+            base.OnLoad(e); ActivateSheet();
         }
         private void ShowSheet()
         {
-            if (tabs.SelectedTab == null) return;
-            var sheet = (CalculationSheet)tabs.SelectedTab.Tag;
+            var choice = sheetPicker.SelectedItem as SheetChoice;
+            if (choice == null || switchingSheet) return;
+            var sheet = choice.Sheet;
+            DataGridView previous;
+            if (selectedSheet != null && selectedSheet != sheet && grids.TryGetValue(selectedSheet, out previous) && !previous.EndEdit()) {
+                switchingSheet = true;
+                try { sheetPicker.SelectedItem = sheetPicker.Items.Cast<SheetChoice>().First(c => c.Sheet == selectedSheet); }
+                finally { switchingSheet = false; }
+                return;
+            }
             DataGridView grid;
             if (!grids.TryGetValue(sheet, out grid)) {
-                grid = CreateGrid(sheet); grids.Add(sheet, grid); tabs.SelectedTab.Controls.Add(grid);
+                grid = CreateGrid(sheet); grid.Visible = false;
+                grids.Add(sheet, grid); sheetHost.Controls.Add(grid);
             }
+            selectedSheet = sheet;
+            foreach (var pair in grids) pair.Value.Visible = pair.Key == sheet;
             FillValues(sheet, grid);
+            grid.BringToFront(); sheetHost.PerformLayout();
         }
         private DataGridView CreateGrid(CalculationSheet sheet)
         {
             var grid = new DataGridView {
-                Dock = DockStyle.Fill, BackgroundColor = UiTheme.Background, BorderStyle = BorderStyle.None,
+                Name = "CalculationGrid", Dock = DockStyle.Fill, Font = Font, BackgroundColor = UiTheme.Background, BorderStyle = BorderStyle.None,
                 AllowUserToAddRows = false, AllowUserToDeleteRows = false, AllowUserToOrderColumns = false,
-                AutoGenerateColumns = false, RowHeadersWidth = 50, MultiSelect = false,
-                AutoSizeRowsMode = DataGridViewAutoSizeRowsMode.AllCells,
+                AutoGenerateColumns = false, RowHeadersWidth = 36, MultiSelect = false,
+                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
+                AutoSizeRowsMode = DataGridViewAutoSizeRowsMode.DisplayedCellsExceptHeaders,
                 ClipboardCopyMode = DataGridViewClipboardCopyMode.EnableAlwaysIncludeHeaderText,
                 EditMode = DataGridViewEditMode.EditOnEnter, GridColor = UiTheme.Border
             };
@@ -73,13 +132,15 @@ namespace SWToolsHub.Portable
             grid.DefaultCellStyle.WrapMode = DataGridViewTriState.True;
             grid.DefaultCellStyle.SelectionBackColor = Color.FromArgb(251, 226, 202);
             grid.DefaultCellStyle.SelectionForeColor = UiTheme.Text;
-            grid.RowTemplate.MinimumHeight = 32;
+            grid.RowTemplate.MinimumHeight = 26; grid.RowTemplate.Height = 26;
             int columns = sheet.Cells.Max(c => c.Column), rows = sheet.Cells.Max(c => c.Row);
             bool strength = engine.Book.Source.Contains("прочность");
             for (int col = 1; col <= columns; col++) {
                 string address = CalculationEngine.Address(1, col);
                 grid.Columns.Add(new DataGridViewTextBoxColumn { Name = address.TrimEnd('1'), HeaderText = address.TrimEnd('1'), SortMode = DataGridViewColumnSortMode.NotSortable,
-                    Width = col == 1 ? 370 : col == 2 ? (strength ? 220 : 215) : col == 3 ? (strength ? 180 : 90) : 260 });
+                    AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill,
+                    FillWeight = ColumnWeight(columns, col, strength),
+                    MinimumWidth = sheet.ReferenceOnly ? (col == 1 ? 100 : 64) : col == 1 ? 128 : col == 2 ? 76 : col == 3 ? 48 : 90 });
             }
             grid.Rows.Add(rows);
             for (int r = 0; r < rows; r++) {
@@ -113,6 +174,13 @@ namespace SWToolsHub.Portable
             grid.DataError += (s, e) => { e.ThrowException = false; message.Text = "Проверьте введённое значение или выберите вариант из списка."; };
             return grid;
         }
+        private static float ColumnWeight(int count, int column, bool strength)
+        {
+            if (count == 2) return column == 1 ? 63 : 37;
+            if (count == 3) return strength ? new[] { 50f, 24f, 26f }[column - 1] : new[] { 55f, 33f, 12f }[column - 1];
+            if (count == 4) return new[] { 42f, 22f, 9f, 27f }[column - 1];
+            return column == 1 ? 180 : 110;
+        }
         private void FillValues(CalculationSheet sheet, DataGridView grid)
         {
             painting = true;
@@ -132,7 +200,7 @@ namespace SWToolsHub.Portable
                     } catch (CalculationError ex) { view.Value = "Ошибка расчёта"; view.ErrorText = ex.Message; view.Style.ForeColor = Color.Firebrick; errors++; }
                 }
                 message.ForeColor = invalid != null || errors > 0 ? Color.Firebrick : UiTheme.Muted;
-                message.Text = invalid ?? (errors > 0 ? "Есть ошибки расчёта. Наведите на значок ошибки у результата." : "Источник: " + engine.Book.Source + " · Формулы и единицы из Excel. Для копирования: Ctrl+C.");
+                message.Text = invalid ?? (errors > 0 ? "Есть ошибки расчёта. Наведите на значок ошибки у результата." : "Источник: " + engine.Book.Source + " · Ctrl+C — копировать.");
             } finally { painting = false; }
         }
         private static object Format(object value, string format, bool input)
@@ -148,7 +216,7 @@ namespace SWToolsHub.Portable
         }
         private void SessionFile(bool load)
         {
-            var sheet = (CalculationSheet)tabs.SelectedTab.Tag;
+            var sheet = selectedSheet;
             if (!grids[sheet].EndEdit()) return;
             using (FileDialog dialog = load ? (FileDialog)new OpenFileDialog() : new SaveFileDialog()) {
                 dialog.Filter = "Исходные данные расчёта (*.json)|*.json"; dialog.FileName = engine.Book.Title + ".json";
@@ -165,8 +233,8 @@ namespace SWToolsHub.Portable
         }
         private void Export()
         {
-            if (tabs.SelectedTab == null) return;
-            var sheet = (CalculationSheet)tabs.SelectedTab.Tag;
+            if (selectedSheet == null) return;
+            var sheet = selectedSheet;
             if (!grids[sheet].EndEdit()) return;
             FillValues(sheet, grids[sheet]);
             using (var dialog = new SaveFileDialog { Filter = "Таблица CSV (*.csv)|*.csv", FileName = sheet.Name + ".csv", OverwritePrompt = true }) {

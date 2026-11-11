@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><TargetFramework>net48</TargetFramework><OutputType>Exe</OutputType><PlatformTarget>x64</PlatformTarget><UseWindowsForms>true</UseWindowsForms><EnableDefaultCompileItems>false</EnableDefaultCompileItems><LangVersion>latest</LangVersion></PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../portable/CalculationEngine.cs" Link="CalculationEngine.cs"/>
+    <Compile Include="../../portable/CalculationView.cs" Link="CalculationView.cs"/>
+    <Compile Include="../../portable/SettingsFile.cs" Link="SettingsFile.cs"/>
+    <Compile Include="../../portable/UiTheme.cs" Link="UiTheme.cs"/>
+    <Compile Include="Program.cs"/>
+    <EmbeddedResource Include="../../portable/Calculations/Workbooks.json" LogicalName="CalculationWorkbooks.json"/>
+    <Reference Include="System.Web.Extensions"/>
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all"/>
+  </ItemGroup>
+</Project>
