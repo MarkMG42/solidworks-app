@@ -13,3 +13,5 @@ tbody th,tbody td{border-bottom:1px solid #eee9e1}
 tbody tr:last-child th,tbody tr:last-child td{border-bottom:0}
 select.cell-input,select.cell-input:hover{border-color:#d4c7b7}
 select.cell-input[aria-invalid=true],select.cell-input[aria-invalid=true]:hover{border-color:#c43b2b}
+
+.add-calculation{width:100%;margin-top:10px;text-align:left}.sidebar{max-height:100dvh;overflow:auto}.sheet-bar{flex-shrink:0}.sheet-bar select{width:0}#calculation-name{width:100%;padding:8px;border:1px solid var(--border);border-radius:7px;background:transparent}nav button span:last-child{overflow-wrap:anywhere}

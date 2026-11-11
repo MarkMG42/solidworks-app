@@ -39,8 +39,10 @@ export class Engine {
   setInput(s, a, v) {
     const k = this.key(s, a), c = this.cells.get(k);
     if (!c?.Editable) throw new CalculationError('Ячейка доступна только для чтения');
+    if (this.book.Custom && (v == null || String(v).trim() === '')) { this.changes.set(k, null); this.cache.clear(); return; }
     if (v == null || String(v).trim() === '') throw new CalculationError('Введите значение');
-    if (typeof c.Value === 'string') {
+    if (this.book.Custom && typeof c.Value === 'boolean') { if (!['TRUE','FALSE'].includes(String(v).toUpperCase())) throw new CalculationError('Выберите TRUE или FALSE'); v = String(v).toUpperCase() === 'TRUE'; }
+    else if (typeof c.Value === 'string') {
       v = String(v); if (c.Options && !c.Options.includes(v)) throw new CalculationError('Выберите значение из списка');
     } else v = number(String(v).replace(',', '.'));
     this.changes.set(k, v); this.cache.clear();
@@ -134,7 +136,7 @@ export class Engine {
     }
   }
   validate(sheetName) {
-    const s = this.book.Sheets.find(s => s.Name === sheetName); if (s.ReferenceOnly) return null;
+    const s = this.book.Sheets.find(s => s.Name === sheetName); if (this.book.Custom || s.ReferenceOnly) return null;
     const get = a => number(this.get(sheetName, a));
     for (const c of s.Cells.filter(c => c.Editable && typeof c.Value !== 'string')) {
       const n = number(this.input(sheetName, c));

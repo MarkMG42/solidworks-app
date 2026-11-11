@@ -4,12 +4,14 @@ const $ = id => document.getElementById(id);
 const labels = ['Стенка трубы','Длина болта','Балка','Болты и швы','Высота узла'];
 const engines = new Map(), defaults = new Map(), sheets = new Map(), drafts = new Map();
 let activeId = 0, activeSheet = null, page = 0, requestId = 0, catalog = [];
+const customBooks = new Map();
+const isCustom = id => typeof id === 'string' && id.startsWith('custom-');
 const PAGE_SIZE = 50, prefix = 'sw-assistant:web:';
 const version = import.meta.env.VITE_APP_VERSION || 'dev';
 const dataURL = file => new URL(`data/${file}?v=${encodeURIComponent(version)}`, new URL(import.meta.env.BASE_URL, location.href));
 function element(tag, className, text) { const e = document.createElement(tag); if (className) e.className = className; if (text != null) e.textContent = text; return e; }
 function announce(message, error = false) { $('announcement').textContent = message; $('announcement').classList.toggle('error',error); $('announcement').hidden = !message; }
-const sessionKey = e => `${prefix}input:${e.book.Source}:${e.book.Sha256}`;
+const sessionKey = e => `${prefix}input:${e.book.Id || e.book.Source}:${e.book.Sha256}`;
 function saveLocal(e) {
   try { localStorage.setItem(sessionKey(e),JSON.stringify(e.saveSession())); $('storage-status').textContent = 'Ввод сохранён в этом браузере'; }
   catch { $('storage-status').textContent = 'Автосохранение недоступно. Используйте «Сохранить ввод».'; }
@@ -42,8 +44,9 @@ async function defaultBook(id) {
 }
 async function getEngine(id) {
   if (!engines.has(id)) {
-    let book = await defaultBook(id);
-    try { const saved = await storedModel(book.Source); if (saved) book = saved; } catch { /* Calculations remain available without browser storage. */ }
+    let book = isCustom(id) ? customBooks.get(id) : await defaultBook(id);
+    if (!book) throw new Error('Пользовательский расчёт не найден');
+    try { const saved = isCustom(id) ? null : await storedModel(book.Source); if (saved) book = saved; } catch { /* Calculations remain available without browser storage. */ }
     const e = new Engine(book); restoreLocal(e); engines.set(id,e);
   } return engines.get(id);
 }
@@ -56,6 +59,7 @@ async function navigate(id) {
   $('macros').hidden = id !== 'macros'; $('calculator').hidden = true; $('main').setAttribute('aria-busy',id !== 'macros');
   if (id === 'macros') { activeSheet = null; $('title').textContent = 'Макросы'; return; }
   $('title').textContent = labels[id];
+  $('custom-actions').hidden = !isCustom(id);
   try {
     const engine = await getEngine(id); if (token !== requestId) return;
     const select = $('sheet'); select.replaceChildren();
@@ -63,7 +67,7 @@ async function navigate(id) {
     select.value = sheets.get(id) || engine.book.Sheets[0].Name; if (!select.value) select.selectedIndex = 0;
     activeSheet = engine.book.Sheets.find(s => s.Name === select.value); page = 0;
     $('calculator').hidden = false; $('loading').hidden=true; $('main').setAttribute('aria-busy','false');
-    $('original').hidden = engine.book.Sha256 === catalog[id]?.sha256;
+    $('original').hidden = isCustom(id) || engine.book.Sha256 === catalog[id]?.sha256;
     renderSheet();
   } catch (error) { if (token === requestId) { $('loading').hidden=true; announce(error.message,true); $('main').setAttribute('aria-busy','false'); } }
 }
@@ -85,7 +89,8 @@ function renderSheet() {
   table.append(colgroup); const thead = element('thead'), tr = element('tr'); tr.append(element('th','row-number',''));
   for (let c=1;c<=columns;c++) tr.append(element('th',null,address(1,c).slice(0,-1))); thead.append(tr); table.append(thead);
   const body = element('tbody'), byAddress = new Map(sheet.Cells.map(c=>[c.Address,c]));
-  const first = sheet.ReferenceOnly ? page*PAGE_SIZE+1 : 1, last = sheet.ReferenceOnly ? Math.min(rows,first+PAGE_SIZE-1) : rows;
+  const paginated = sheet.ReferenceOnly || engine.book.Custom;
+  const first = paginated ? page*PAGE_SIZE+1 : 1, last = paginated ? Math.min(rows,first+PAGE_SIZE-1) : rows;
   const capturedId = activeId;
   for (let row=first;row<=last;row++) {
     const tr = element('tr'); const rowHead = element('th','row-number',row); rowHead.scope='row'; tr.append(rowHead);
@@ -101,7 +106,7 @@ function renderSheet() {
           if (c.Options?.length) for (const optionValue of c.Options) { const option=element('option',null,optionValue); option.value=optionValue; input.append(option); }
           else { input.type='text'; input.inputMode=typeof c.Value==='number'?'decimal':'text'; input.autocomplete='off'; }
           const dk=draftKey(capturedId,sheet.Name,c.Address), draft=drafts.get(dk);
-          input.value = draft?.text ?? (c.Options?.length?String(engine.input(sheet.Name,c)):valueText(engine.input(sheet.Name,c),{...c,Editable:true}));
+          input.value = draft?.text ?? (c.Options?.length?typeof c.Value==='boolean'?String(engine.input(sheet.Name,c)).toUpperCase():String(engine.input(sheet.Name,c)):valueText(engine.input(sheet.Name,c),{...c,Editable:true}));
           if (draft?.error) { input.setAttribute('aria-invalid','true'); input.title=draft.error; }
           input.addEventListener(c.Options?.length?'change':'input',()=>{
             try {
@@ -118,7 +123,7 @@ function renderSheet() {
   }
   table.append(body);
   $('source').textContent = `Источник: ${engine.book.Source}` + (engine.book.Sha256 !== catalog[activeId]?.sha256 ? ' · ваш Excel' : '');
-  $('pagination').hidden = !sheet.ReferenceOnly || rows<=PAGE_SIZE;
+  $('pagination').hidden = !paginated || rows<=PAGE_SIZE;
   $('page-info').textContent=`Строки ${first}–${last} из ${rows}`; $('previous').disabled=page===0; $('next').disabled=last>=rows;
   updateResults(); $('table-scroll').scrollTo(0,0);
 }
@@ -171,15 +176,15 @@ $('csv').addEventListener('click',()=>{
 $('excel').addEventListener('click',()=>$('excel-file').click());
 $('excel-file').addEventListener('change',async event=>{
   const file=event.target.files[0];event.target.value='';if(!file)return;
-  const id=activeId,original=await defaultBook(id);$('excel').disabled=true;for(const b of $('navigation').querySelectorAll('button'))b.disabled=true;announce('Читаю Excel и проверяю формулы…');
+  const id=activeId,original=isCustom(id)?customBooks.get(id):await defaultBook(id);$('excel').disabled=true;for(const b of $('navigation').querySelectorAll('button'))b.disabled=true;announce('Читаю Excel и проверяю формулы…');
   try{
     if(!file.name.toLowerCase().endsWith('.xlsx'))throw new Error('Выберите файл .xlsx');
     if(file.size>15*1024*1024)throw new Error('Максимальный размер Excel — 15 МБ');
     const [{default:ExcelJS},{importWorkbook}]=await Promise.all([import('exceljs'),import('./import-excel.js')]);
     const bytes=await file.arrayBuffer(),digest=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),b=>b.toString(16).padStart(2,'0')).join('');
-    const model=await importWorkbook(bytes,original,ExcelJS,digest);
+    const model=await importWorkbook(bytes,original,ExcelJS,digest);if(isCustom(id))model.Id=id;
     if(!await confirm('Обновить расчёт из Excel?','Будут заменены формулы, справочники и исходные значения выбранного расчёта. Перед заменой можно отменить и сохранить текущий ввод.')){announce('Обновление отменено.');return;}
-    let retained=true;try{await storedModel(original.Source,model);}catch{retained=false;}
+    let retained=true;try{await storedModel(isCustom(id)?id:original.Source,model);if(isCustom(id))customBooks.set(id,model);}catch{retained=false;}
     const engine=new Engine(model);engines.set(id,engine);for(const k of drafts.keys())if(k.startsWith(`${id}:`))drafts.delete(k);saveLocal(engine);
     await navigate(id);announce(retained?'Формулы и справочники обновлены из Excel и сохранены в этом браузере.':'Excel загружен в текущую вкладку. Браузер не разрешил сохранить модель: после закрытия её нужно загрузить снова.',!retained);
   }catch(error){announce(`Excel не применён: ${error.message}`,true);}finally{$('excel').disabled=false;for(const b of $('navigation').querySelectorAll('button'))b.disabled=false;}
@@ -188,13 +193,36 @@ $('original').addEventListener('click',async()=>{
   if(!await confirm('Вернуть встроенные формулы?','Загруженная из Excel версия этого расчёта будет заменена встроенной.'))return;
   try{const b=await defaultBook(activeId);await storedModel(b.Source,undefined,true);engines.delete(activeId);for(const k of drafts.keys())if(k.startsWith(`${activeId}:`))drafts.delete(k);await navigate(activeId);announce('Встроенные формулы восстановлены.');}catch(error){announce(error.message,true);}
 });
-for(const [id,label] of [['macros','Макросы'],...labels.map((v,i)=>[i,v])]){
+function addNavigation(id,label){
   const button=element('button');button.type='button';button.dataset.id=id;
-  button.append(element('span','nav-icon',id==='macros'?'◇':String(id+1).padStart(2,'0')),element('span',null,label));button.addEventListener('click',()=>navigate(id));$('navigation').append(button);
+  button.append(element('span','nav-icon',isCustom(id)?'◇':id==='macros'?'◇':String(id+1).padStart(2,'0')),element('span',null,label));button.addEventListener('click',()=>navigate(id));$('navigation').append(button);
 }
+for(const [id,label] of [['macros','Макросы'],...labels.map((v,i)=>[i,v])]){
+  addNavigation(id,label);
+}
+function hashId(){const raw=location.hash.replace(/^#calc-/,'');return location.hash==='#macros'?'macros':customBooks.has(raw)?raw:/^[0-4]$/.test(raw)?Number(raw):0;}
+async function askName(value){const d=$('name-dialog');$('calculation-name').value=value;d.returnValue='';return new Promise(resolve=>{d.addEventListener('close',()=>resolve(d.returnValue==='ok'?$('calculation-name').value.trim():null),{once:true});d.showModal();$('calculation-name').focus();});}
+$('add-calculation').addEventListener('click',()=>$('custom-file').click());
+$('custom-file').addEventListener('change',async event=>{
+ const file=event.target.files[0];event.target.value='';if(!file)return;
+ $('add-calculation').disabled=true;announce('Читаю Excel и проверяю все листы…');
+ try{
+  if(!file.name.toLowerCase().endsWith('.xlsx'))throw new Error('Выберите файл .xlsx');
+  if(file.size>15*1024*1024)throw new Error('Максимальный размер Excel — 15 МБ');
+  const [{default:ExcelJS},{importCustomWorkbook}]=await Promise.all([import('exceljs'),import('./import-excel.js')]);
+  const bytes=await file.arrayBuffer(),digest=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),b=>b.toString(16).padStart(2,'0')).join('');
+  const model=await importCustomWorkbook(bytes,file.name.replace(/\.xlsx$/i,''),file.name,ExcelJS,digest);
+  const title=await askName(model.Title);if(!title){announce('Добавление отменено.');return;}
+  const id='custom-'+crypto.randomUUID();model.Title=title;model.Id=id;
+  await storedModel(id,model);customBooks.set(id,model);labels[id]=title;addNavigation(id,title);await navigate(id);announce('Расчёт добавлен и сохранён в этом браузере.');
+ }catch(error){announce('Расчёт не добавлен: '+error.message,true);}finally{$('add-calculation').disabled=false;}
+});
+$('rename-calculation').addEventListener('click',async()=>{const id=activeId,book=customBooks.get(id);if(!book)return;const title=await askName(book.Title);if(!title)return;try{const model={...book,Title:title};await storedModel(id,model);customBooks.set(id,model);selectedEngine().book.Title=title;labels[id]=title;$('navigation').querySelector(`[data-id="${id}"] span:last-child`).textContent=title;$('title').textContent=title;}catch(error){announce(error.message,true);}});
+$('delete-calculation').addEventListener('click',async()=>{const id=activeId;if(!isCustom(id)||!await confirm('Удалить расчёт?','Удалится пользовательский расчёт из этого браузера. Исходный файл Excel останется у вас.'))return;try{await storedModel(id,undefined,true);const e=engines.get(id);if(e){try{localStorage.removeItem(sessionKey(e));}catch{}}engines.delete(id);customBooks.delete(id);sheets.delete(id);for(const k of drafts.keys())if(k.startsWith(`${id}:`))drafts.delete(k);$('navigation').querySelector(`[data-id="${id}"]`).remove();await navigate(0);}catch(error){announce(error.message,true);}});
 $('version').textContent=version==='dev'?'':version.slice(0,7);
-window.addEventListener('hashchange',()=>{const match=/^#calc-([0-4])$/.exec(location.hash);const id=location.hash==='#macros'?'macros':match?Number(match[1]):0;if(id!==activeId)navigate(id);});
+window.addEventListener('hashchange',()=>{const id=hashId();if(id!==activeId)navigate(id);});
 try{
   const r=await fetch(dataURL('catalog.json'));if(!r.ok)throw new Error('Не удалось загрузить расчёты. Нажмите «Обновить приложение».');catalog=await r.json();
-  const match=/^#calc-([0-4])$/.exec(location.hash);await navigate(location.hash==='#macros'?'macros':match?Number(match[1]):0);
+  try { const db=await modelStore(); const models=await new Promise((resolve,reject)=>{const r=db.transaction('models').objectStore('models').getAll();r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);});for(const book of models)if(book.Custom && book.Id){customBooks.set(book.Id,book);labels[book.Id]=book.Title;addNavigation(book.Id,book.Title);} } catch { announce('Хранилище пользовательских расчётов недоступно.',true); }
+  await navigate(hashId());
 }catch(error){$('loading').hidden=true;announce(error.message,true);$('main').setAttribute('aria-busy','false');}

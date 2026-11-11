@@ -11,6 +11,7 @@
     <aside class="sidebar" aria-label="Разделы приложения">
       <div class="brand"><span class="brand-mark" aria-hidden="true">◇</span><span>SW-Assistant<small>Расчёты в браузере</small></span></div>
       <nav id="navigation" aria-label="Макросы и расчёты"></nav>
+      <button id="add-calculation" type="button" class="add-calculation">＋ Добавить расчёт</button>
       <p class="sidebar-note">Данные и вычисления остаются в вашем браузере.</p>
     </aside>
     <main id="main" aria-busy="true">
@@ -25,6 +26,7 @@
           <button type="button" id="csv">Экспорт CSV…</button>
           <button type="button" id="excel" class="accent">Обновить из Excel…</button>
         </div>
+        <div class="actions" id="custom-actions" hidden><button id="rename-calculation" type="button">Переименовать</button><button id="delete-calculation" type="button">Удалить расчёт</button></div>
         <div class="sheet-bar"><label for="sheet">Лист</label><select id="sheet"></select><span id="sheet-kind"></span></div>
         <p class="hint">Изменяйте значения в полях. Результаты пересчитываются автоматически.</p>
         <div id="validation" class="validation" role="status" aria-live="polite" hidden></div>
@@ -41,6 +43,8 @@
       <footer class="app-footer">Расчёты по исходным Excel · <a href="https://github.com/MarkMG42/solidworks-app" target="_blank" rel="noopener noreferrer">GitHub</a><span id="version"></span></footer>
     </main>
   </div>
+  <input id="custom-file" type="file" accept=".xlsx" hidden>
+  <dialog id="name-dialog"><form method="dialog"><h2>Название расчёта</h2><input id="calculation-name" aria-label="Название расчёта" maxlength="80" required><div class="dialog-actions"><button value="cancel" formnovalidate>Отмена</button><button value="ok" class="accent">Сохранить</button></div></form></dialog>
   <input id="session-file" type="file" accept=".json,application/json" hidden>
   <input id="excel-file" type="file" accept=".xlsx" hidden>
   <dialog id="confirm"><form method="dialog"><h2 id="confirm-title"></h2><p id="confirm-text"></p><div class="dialog-actions"><button value="cancel">Отмена</button><button value="ok" class="accent">Продолжить</button></div></form></dialog>

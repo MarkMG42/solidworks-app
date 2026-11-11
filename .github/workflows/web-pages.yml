@@ -57,6 +57,7 @@ jobs:
           ln -s "$GITHUB_WORKSPACE/web/dist" "$RUNNER_TEMP/web-site/solidworks-app"
           python -m http.server 4173 --bind 127.0.0.1 --directory "$RUNNER_TEMP/web-site" > "$RUNNER_TEMP/web-server.log" 2>&1 &
           python web/tests/browser_smoke.py --url http://127.0.0.1:4173/solidworks-app/
+          python web/tests/custom_browser.py --url http://127.0.0.1:4173/solidworks-app/
       - uses: actions/upload-artifact@v4
         if: always()
         with:
