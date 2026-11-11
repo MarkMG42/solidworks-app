@@ -11,3 +11,5 @@ main{min-width:0;padding:20px 24px 10px;display:flex;flex-direction:column;heigh
 thead th{border-bottom:1px solid #e3dccf}
 tbody th,tbody td{border-bottom:1px solid #eee9e1}
 tbody tr:last-child th,tbody tr:last-child td{border-bottom:0}
+select.cell-input,select.cell-input:hover{border-color:#d4c7b7}
+select.cell-input[aria-invalid=true],select.cell-input[aria-invalid=true]:hover{border-color:#c43b2b}
