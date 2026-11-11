@@ -4,7 +4,7 @@
 
 ## Веб-версия
 
-Пять расчётов доступны в браузере без установки Excel и скачивания Windows-сборки. Интерфейс, локальное сохранение и обновление формул из XLSX: [инструкция веб-версии](web/README.md). Публикация сайта настроена через [GitHub Pages workflow](.github/workflows/web-pages.yml); адрес после активации — https://markmg42.github.io/solidworks-app/.
+[Открыть веб-приложение SW-Assistant](https://markmg42.github.io/solidworks-app/) — пять расчётов без установки Excel и скачивания Windows-сборки. Интерфейс, локальное сохранение и обновление формул из XLSX: [инструкция веб-версии](web/README.md). Проверки и обновление сайта выполняются автоматически через [GitHub Pages workflow](.github/workflows/web-pages.yml).
 
 ## Расчёты из Excel
 
