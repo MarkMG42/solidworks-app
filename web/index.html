@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#fdfcf8"><meta name="description" content="SW-Assistant: пять инженерных расчётов из Excel в браузере.">
+  <title>SW-Assistant — расчёты</title>
+  <link rel="icon" href="./favicon.ico"><script type="module" src="/src/app.js"></script>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar" aria-label="Разделы приложения">
+      <div class="brand"><span class="brand-mark" aria-hidden="true">◇</span><span>SW-Assistant<small>Расчёты в браузере</small></span></div>
+      <nav id="navigation" aria-label="Макросы и расчёты"></nav>
+      <p class="sidebar-note">Данные и вычисления остаются в вашем браузере.</p>
+    </aside>
+    <main id="main" aria-busy="true">
+      <header class="page-heading"><div><p class="eyebrow">SW-Assistant · веб-версия</p><h1 id="title">Загрузка расчётов…</h1></div><button id="refresh" class="quiet" type="button">Обновить приложение</button></header>
+      <div id="announcement" class="announcement" role="status" aria-live="polite" hidden></div>
+      <p id="loading" class="hint" role="status">Открываю расчёт…</p>
+      <section id="calculator" hidden>
+        <div class="actions" aria-label="Действия с расчётом">
+          <button type="button" id="reset">Сбросить ввод</button>
+          <button type="button" id="save">Сохранить ввод…</button>
+          <button type="button" id="open">Открыть ввод…</button>
+          <button type="button" id="csv">Экспорт CSV…</button>
+          <button type="button" id="excel" class="accent">Обновить из Excel…</button>
+        </div>
+        <div class="sheet-bar"><label for="sheet">Лист</label><select id="sheet"></select><span id="sheet-kind"></span></div>
+        <p class="hint">Светлые ячейки — ввод. Результаты пересчитываются автоматически.</p>
+        <div id="validation" class="validation" role="status" aria-live="polite" hidden></div>
+        <div id="table-scroll" class="table-scroll" tabindex="0" aria-label="Таблица расчёта"><table id="worksheet"></table></div>
+        <div class="table-footer"><span id="source"></span><div id="pagination" hidden><button id="previous" type="button">←</button><span id="page-info"></span><button id="next" type="button">→</button></div></div>
+        <div class="calculation-footer"><span id="storage-status">Ввод сохраняется в этом браузере</span><button id="original" class="text-button" type="button" hidden>Вернуть встроенные формулы</button></div>
+      </section>
+      <section id="macros" class="empty-state" hidden>
+        <span class="empty-icon" aria-hidden="true">◇</span><h2>Макросы SolidWorks</h2>
+        <p>Для запуска VBA-макросов в SolidWorks используйте Windows-программу. Браузер не имеет прямого доступа к запущенному SolidWorks.</p>
+        <a class="button" href="https://github.com/MarkMG42/solidworks-app/raw/refs/heads/main/installer/calculations/SW-Assistant-Calculations.zip">Скачать Windows-программу</a>
+        <p class="hint">Все пять расчётов доступны в меню и работают без SolidWorks и Excel.</p>
+      </section>
+      <footer class="app-footer">Расчёты по исходным Excel · <a href="https://github.com/MarkMG42/solidworks-app" target="_blank" rel="noopener noreferrer">GitHub</a><span id="version"></span></footer>
+    </main>
+  </div>
+  <input id="session-file" type="file" accept=".json,application/json" hidden>
+  <input id="excel-file" type="file" accept=".xlsx" hidden>
+  <dialog id="confirm"><form method="dialog"><h2 id="confirm-title"></h2><p id="confirm-text"></p><div class="dialog-actions"><button value="cancel">Отмена</button><button value="ok" class="accent">Продолжить</button></div></form></dialog>
+</body>
+</html>

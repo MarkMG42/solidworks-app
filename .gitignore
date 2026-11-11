@@ -18,3 +18,11 @@ frontend/playwright-report/
 
 # Локальные пакеты приложения
 artifacts/
+
+# Веб-версия расчётов
+web/node_modules/
+web/dist/
+web/public/data/
+web/public/fonts/
+web/test-results/
+web/public/favicon.ico

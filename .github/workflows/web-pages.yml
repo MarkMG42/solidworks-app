@@ -1,0 +1,83 @@
+name: Web calculations — GitHub Pages
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'web/**'
+      - 'addin/portable/Calculations/Workbooks.json'
+      - 'addin/portable/Fonts/**'
+      - 'addin/portable/Assets/AppIcon.ico'
+      - 'addin/tests/calculations/SpreadsheetScenarios.json'
+      - 'installer/calculations/Excel/**'
+      - '.github/workflows/web-pages.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: web-pages
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Install locked dependencies
+        working-directory: web
+        run: npm ci --no-fund --no-audit
+      - name: Compare browser engine and XLSX import with Excel
+        working-directory: web
+        run: npm test
+      - name: Build static application
+        working-directory: web
+        env:
+          VITE_APP_VERSION: ${{ github.sha }}
+        run: npm run build
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Browser test dependencies
+        run: |
+          python -m pip install -r web/tests/requirements.txt
+          python -m playwright install --with-deps chromium
+      - name: Test deployed subdirectory layout in Chromium
+        run: |
+          mkdir -p "$RUNNER_TEMP/web-site"
+          ln -s "$GITHUB_WORKSPACE/web/dist" "$RUNNER_TEMP/web-site/solidworks-app"
+          python -m http.server 4173 --bind 127.0.0.1 --directory "$RUNNER_TEMP/web-site" > "$RUNNER_TEMP/web-server.log" 2>&1 &
+          python web/tests/browser_smoke.py --url http://127.0.0.1:4173/solidworks-app/
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: browser-screenshots
+          path: web/test-results/
+          if-no-files-found: ignore
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: web/dist
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/configure-pages@v5
+        with:
+          enablement: true
+      - name: Deploy GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+      - name: Verify published website
+        env:
+          PAGE_URL: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          curl --fail --location --retry 5 --retry-delay 10 "${PAGE_URL}" --output "$RUNNER_TEMP/web-index.html"
+          curl --fail --location --retry 5 --retry-delay 10 "${PAGE_URL}data/catalog.json" --output "$RUNNER_TEMP/web-catalog.json"
+          node -e 'const fs=require("fs"); const items=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP+"/web-catalog.json")); if(items.length!==5) process.exit(1); console.log("Published catalog verified: five calculations");'

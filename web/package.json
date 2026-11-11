@@ -1,0 +1,22 @@
+{
+  "name": "sw-assistant-web",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "prepare:data": "node scripts/prepare-data.mjs",
+    "dev": "npm run prepare:data && vite --host 0.0.0.0",
+    "build": "npm run prepare:data && vite build",
+    "preview": "vite preview --host 0.0.0.0",
+    "test": "node --test tests/*.test.mjs"
+  },
+  "dependencies": {
+    "exceljs": "4.4.0"
+  },
+  "devDependencies": {
+    "vite": "8.3.8"
+  },
+  "overrides": {
+    "uuid": "11.1.1"
+  }
+}

@@ -1,0 +1,71 @@
+SW-Assistant Web — проверка перед публикацией
+
+Node.js 24.22.1, Chromium/Playwright 1.62.0, Linux.
+
+
+> sw-assistant-web@1.0.0 test
+> node --test tests/*.test.mjs
+
+Расчет толщины стенки труб.xlsx: 19 formula cells matched
+Расчет длины болта.xlsx: 77 formula cells matched
+Расчет балки.xlsx: 5765 formula cells matched
+Расчет болта, шва на прочность.xlsx: 30 formula cells matched
+Расчет высоты узла.xlsx: 3 formula cells matched
+256 independent scenarios / 4363 results matched
+✔ Excel cached values: Расчет толщины стенки труб.xlsx (2.759882ms)
+✔ Excel cached values: Расчет длины болта.xlsx (2.923393ms)
+✔ Excel cached values: Расчет балки.xlsx (140.461704ms)
+✔ Excel cached values: Расчет болта, шва на прочность.xlsx (0.605417ms)
+✔ Excel cached values: Расчет высоты узла.xlsx (0.198871ms)
+✔ 256 independent spreadsheet scenarios (4311.999563ms)
+✔ Sessions, Russian numbers, reset, and atomic import (1.192254ms)
+✔ Invalid dimensions and incomplete source data (4.237482ms)
+Imported Расчет толщины стенки труб.xlsx: 19 formulas matched
+✔ Excel upload: Расчет толщины стенки труб.xlsx (176.915985ms)
+Imported Расчет длины болта.xlsx: 77 formulas matched
+✔ Excel upload: Расчет длины болта.xlsx (56.404823ms)
+Imported Расчет балки.xlsx: 5765 formulas matched
+✔ Excel upload: Расчет балки.xlsx (943.110928ms)
+Imported Расчет болта, шва на прочность.xlsx: 30 formulas matched
+✔ Excel upload: Расчет болта, шва на прочность.xlsx (77.11993ms)
+Imported Расчет высоты узла.xlsx: 3 formulas matched
+✔ Excel upload: Расчет высоты узла.xlsx (30.077241ms)
+✔ Modified Excel formula is evaluated; unsupported functions are rejected (120.488706ms)
+ℹ tests 14
+ℹ suites 0
+ℹ pass 14
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 4605.900426
+
+Browser checks passed: five first loads, editing, reload persistence, sheets, JSON/CSV, XLSX formula replacement, unsupported formula rollback, stored model reload, restoring built-in model, invalid input, reference pagination, seven widths, macro explanation. No browser exceptions.
+
+
+> sw-assistant-web@1.0.0 build
+> npm run prepare:data && vite build
+
+
+> sw-assistant-web@1.0.0 prepare:data
+> node scripts/prepare-data.mjs
+
+Prepared five workbooks and bundled fonts
+vite v8.3.8 building client environment for production...
+transforming...
+✓ 9 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                             4.62 kB │ gzip:   1.89 kB
+dist/assets/index-B8TlBD8f.css              6.71 kB │ gzip:   2.14 kB
+dist/assets/rolldown-runtime-pP25SEvz.js    0.98 kB │ gzip:   0.56 kB
+dist/assets/import-excel-Db9PXLUh.js        4.98 kB │ gzip:   2.48 kB
+dist/assets/engine-FYijd7FH.js              9.35 kB │ gzip:   3.90 kB
+dist/assets/index-Drc6L_LK.js              15.85 kB │ gzip:   6.36 kB
+dist/assets/exceljs.min-tdmMIeWm.js       929.38 kB │ gzip: 256.38 kB
+
+✓ built in 301ms
+
+Зависимости production: npm audit — 0 известных уязвимостей после override uuid 11.1.1.
+Проверка выполнена под /solidworks-app/, как в GitHub Pages.
+Этот отчёт подтверждает локальную сборку и браузерные проверки, а не успешную публикацию сайта.

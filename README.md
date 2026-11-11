@@ -2,6 +2,10 @@
 
 Переносимое Windows-приложение для запуска локальных VBA-макросов в открытом SolidWorks. Итоговое состояние на 9 ноября 2026.
 
+## Веб-версия
+
+Пять расчётов доступны в браузере без установки Excel и скачивания Windows-сборки. Интерфейс, локальное сохранение и обновление формул из XLSX: [инструкция веб-версии](web/README.md). Публикация сайта настроена через [GitHub Pages workflow](.github/workflows/web-pages.yml); адрес после активации — https://markmg42.github.io/solidworks-app/.
+
 ## Расчёты из Excel
 
 Версия с левым переключением «Макросы / Расчёты» и пятью расчётами сохранена отдельно: [пакет с расчётами](installer/calculations/SW-Assistant-Calculations.zip), [инструкция и проверка](installer/calculations/README.md). Для расчётов Excel и запущенный SolidWorks не нужны; программа требует Windows x64 и .NET Framework 4.8.
