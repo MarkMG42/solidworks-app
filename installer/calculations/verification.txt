@@ -28,3 +28,18 @@ Native Windows-проверка НЕ ЗАПУСКАЛАСЬ: в среде не�
 
 SW-Assistant-Portable.zip SHA256 bd6edd98acf4be024933f50d9afb39df58270330c71658c9c88bcc10bb682b76; ZIP and extracted files verified
 SW-Assistant-Calculations.zip SHA256 bd6edd98acf4be024933f50d9afb39df58270330c71658c9c88bcc10bb682b76; ZIP and extracted files verified
+
+=== Обновление 12 ноября 2026: просмотр XLSX ===
+Предыдущие записи и хэши выше — история предыдущих сборок.
+Linux x64, .NET SDK 8.0.428, Release net48 x64, interop API 2024.
+Сборка: 0 ошибок, 0 предупреждений. Численные проверки: 10284/10284.
+Xlsx.Checks: сохранённый результат, отсутствующий кэш, 0, FALSE,
+пустая строка, ошибка Excel, произвольный путь части листа и пустой лист — PASS.
+Веб: 25 групп npm test, production build, browser_smoke/custom/design/viewer — PASS.
+GitHub Pages build/deploy/Verify published website — SUCCESS:
+https://github.com/MarkMG42/solidworks-app/actions/runs/43175720218
+Оба ZIP пересозданы из новой сборки b5495c4; CRC и соответствие EXE проверены.
+Скачанный с GitHub канонический ZIP имеет тот же SHA-256.
+SW-Assistant-Portable.zip SHA256 635b68cbfd49b80edee12389fe99516e8b84bd3132b35dd81ff47b60883d4945
+SW-Assistant-Calculations.zip SHA256 635b68cbfd49b80edee12389fe99516e8b84bd3132b35dd81ff47b60883d4945
+Windows/WinForms/SolidWorks/VBA не запускались; требуется native-приёмка.
