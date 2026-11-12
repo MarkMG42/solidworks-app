@@ -11,6 +11,9 @@
     <EmbeddedResource Include="Assets/AppIcon.ico" LogicalName="AppIcon.ico" />
     <Content Include="Fonts/SourceSans3-Regular.ttf;Fonts/SourceSans3-Semibold.ttf;Fonts/LICENSE.md"><CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory></Content>
     <Reference Include="System.Web.Extensions" />
+    <Reference Include="System.IO.Compression" />
+    <Reference Include="System.IO.Compression.FileSystem" />
+    <Reference Include="System.Xml.Linq" />
     <Reference Include="SolidWorks.Interop.sldworks"><HintPath>$(SolidWorksInteropPath)\SolidWorks.Interop.sldworks.dll</HintPath><EmbedInteropTypes>false</EmbedInteropTypes><Private>true</Private></Reference>
     <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
   </ItemGroup>

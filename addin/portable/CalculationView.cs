@@ -125,9 +125,11 @@ namespace SWToolsHub.Portable
                 AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
                 AutoSizeRowsMode = DataGridViewAutoSizeRowsMode.DisplayedCellsExceptHeaders,
                 ClipboardCopyMode = DataGridViewClipboardCopyMode.EnableAlwaysIncludeHeaderText,
+                CellBorderStyle = DataGridViewCellBorderStyle.SingleHorizontal,
                 EditMode = DataGridViewEditMode.EditOnEnter, GridColor = UiTheme.Border
             };
-            grid.DefaultCellStyle.BackColor = Color.FromArgb(244, 242, 237);
+            grid.DefaultCellStyle.BackColor = UiTheme.Background;
+            grid.DefaultCellStyle.Padding = new Padding(10, 6, 10, 6);
             grid.DefaultCellStyle.ForeColor = UiTheme.Text;
             grid.DefaultCellStyle.WrapMode = DataGridViewTriState.True;
             grid.DefaultCellStyle.SelectionBackColor = Color.FromArgb(251, 226, 202);

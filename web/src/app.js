@@ -1,4 +1,7 @@
 import './style.css';
+import { setupViewer } from './xlsx-viewer.js';
+const viewer = document.createElement('section'); viewer.id='xlsx-viewer'; viewer.hidden=true;
+document.getElementById('macros').before(viewer); setupViewer(viewer);
 import { Engine, address, CalculationError } from './engine.js';
 const $ = id => document.getElementById(id);
 const labels = ['Стенка трубы','Длина болта','Балка','Болты и швы','Высота узла'];
@@ -53,10 +56,12 @@ async function getEngine(id) {
 function selectedEngine() { return engines.get(activeId); }
 function rememberSheet() { if (activeSheet && activeId !== 'macros') sheets.set(activeId,activeSheet.Name); }
 async function navigate(id) {
+  viewer.hidden=id!=='viewer';
   rememberSheet(); announce(''); const token = ++requestId; activeId = id; $('loading').hidden=id==='macros';
   location.hash = id === 'macros' ? 'macros' : `calc-${id}`;
   for (const button of $('navigation').querySelectorAll('button')) { const selected = button.dataset.id === String(id); button.classList.toggle('active',selected); if (selected) button.setAttribute('aria-current','page'); else button.removeAttribute('aria-current'); }
   $('macros').hidden = id !== 'macros'; $('calculator').hidden = true; $('main').setAttribute('aria-busy',id !== 'macros');
+  if (id === 'viewer') { activeSheet=null; $('title').textContent='Просмотр XLSX'; $('loading').hidden=true; $('main').setAttribute('aria-busy','false'); return; }
   if (id === 'macros') { activeSheet = null; $('title').textContent = 'Макросы'; return; }
   $('title').textContent = labels[id];
   $('custom-actions').hidden = !isCustom(id);
@@ -222,12 +227,12 @@ $('original').addEventListener('click',async()=>{
 });
 function addNavigation(id,label){
   const button=element('button');button.type='button';button.dataset.id=id;
-  button.append(element('span','nav-icon',isCustom(id)?'◇':id==='macros'?'◇':String(id+1).padStart(2,'0')),element('span',null,label));button.addEventListener('click',()=>navigate(id));$('navigation').append(button);
+  button.append(element('span','nav-icon',isCustom(id)?'◇':id==='macros'||id==='viewer'?'◇':String(id+1).padStart(2,'0')),element('span',null,label));button.addEventListener('click',()=>navigate(id));$('navigation').append(button);
 }
-for(const [id,label] of [['macros','Макросы'],...labels.map((v,i)=>[i,v])]){
+for(const [id,label] of [['macros','Макросы'],['viewer','Просмотр XLSX'],...labels.map((v,i)=>[i,v])]){
   addNavigation(id,label);
 }
-function hashId(){const raw=location.hash.replace(/^#calc-/,'');return location.hash==='#macros'?'macros':customBooks.has(raw)?raw:/^[0-4]$/.test(raw)?Number(raw):0;}
+function hashId(){const raw=location.hash.replace(/^#calc-/,'');return raw==='viewer'?'viewer':location.hash==='#macros'?'macros':customBooks.has(raw)?raw:/^[0-4]$/.test(raw)?Number(raw):0;}
 async function askName(value){const d=$('name-dialog');$('calculation-name').value=value;d.returnValue='';return new Promise(resolve=>{d.addEventListener('close',()=>resolve(d.returnValue==='ok'?$('calculation-name').value.trim():null),{once:true});d.showModal();$('calculation-name').focus();});}
 $('add-calculation').addEventListener('click',()=>$('custom-file').click());
 $('custom-file').addEventListener('change',async event=>{

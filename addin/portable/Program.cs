@@ -199,6 +199,15 @@ namespace SWToolsHub.Portable
                 foreach (Control child in calculationHost.Controls) child.Visible = child == view;
                 calculationsActive = true; viewport.Visible = false; calculationHost.Visible = true; view.BringToFront(); view.ActivateSheet();
             };
+            XlsxSnapshotView snapshotView = null;
+            var snapshotButton = MakeButton("Просмотр XLSX"); snapshotButton.Width = 145; snapshotButton.Height = 54;
+            snapshotButton.Click += (sender, args) => {
+                if (busy || editingHotkeys) return;
+                if (snapshotView == null) { snapshotView = new XlsxSnapshotView(); calculationHost.Controls.Add(snapshotView); }
+                foreach (Control child in calculationHost.Controls) child.Visible = child == snapshotView;
+                calculationsActive = true; viewport.Visible = false; calculationHost.Visible = true; snapshotView.BringToFront();
+            };
+            navigation.Controls.Add(snapshotButton);
             string[] titles = { "Стенка трубы", "Длина болта", "Балка", "Болты и швы", "Высота узла" };
             for (int i = 0; i < titles.Length; i++) {
                 int index = i;
