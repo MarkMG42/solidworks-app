@@ -5,6 +5,7 @@ import JSZip from 'jszip';
 import { readSnapshot } from '../src/xlsx-viewer.js';
 export async function viewerFixture() {
  const book=new ExcelJS.Workbook();const sheet=book.addWorksheet('Данные');book.addWorksheet('Пустой');
+ const layout=book.addWorksheet('Координаты');layout.getCell('C3').value='Исходное место';layout.getCell('AA55').value={formula:'UNKNOWN()',result:17};
  sheet.getCell('A1').value={formula:'UNSUPPORTED(1)',result:123};
  sheet.getCell('A2').value={formula:'1-1',result:0};
  sheet.getCell('A3').value={formula:'1=2',result:false};
@@ -19,10 +20,12 @@ export async function viewerFixture() {
 }
 test('Viewer cached results distinguish missing, zero, false, blank and errors without recalculation',async()=>{
  const sheets=await readSnapshot(await viewerFixture(),ExcelJS);const cells=new Map(sheets[0].cells.map(c=>[c.address,c]));
- assert.equal(sheets.length,2);assert.equal(sheets[1].cells.length,0);
+ assert.equal(sheets.length,3);assert.equal(sheets[1].cells.length,0);
  assert.equal(cells.get('A1').text,'123');assert.equal(cells.get('A1').formula,'=UNSUPPORTED(1)');
  assert.equal(cells.get('A2').text,'0');assert.equal(cells.get('A3').text,'false');
  assert.equal(cells.get('A4').missing,true);assert.equal(cells.get('A4').text,'Нет сохранённого результата');
  assert.equal(cells.get('A5').missing,false);assert.equal(cells.get('A5').text,'');
  assert.equal(cells.get('A6').text,'#DIV/0!');
+ assert.equal(sheets[2].rows,55);assert.equal(sheets[2].columns,27);
+ assert.equal(sheets[2].cells.find(c=>c.address==='AA55').text,'17');
 });

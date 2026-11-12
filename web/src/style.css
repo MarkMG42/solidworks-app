@@ -43,3 +43,13 @@ select.cell-input{padding:4px 6px}.table-scroll{border:0;border-radius:0}
 #xlsx-viewer>button{align-self:flex-start}#viewer-table th{text-align:left}#viewer-table th:first-child{width:90px}
 #viewer-table td{white-space:pre-wrap}#viewer-table .missing-result{color:#ffb77d}
 @media(max-width:600px){#xlsx-viewer{min-height:400px}td,th,.dashboard td,td.editable,.dashboard td.editable{padding:8px}}
+
+/* Read-only workbook coordinates; formulas and cached values stay together. */
+#viewer-table.sheet-grid{min-width:100%;table-layout:fixed}
+#viewer-table.sheet-grid th:first-child{width:56px}
+#viewer-table.sheet-grid thead th{text-align:center}
+#viewer-table.sheet-grid tbody th{position:sticky;left:0;background:#1b2e48;text-align:right;font-weight:400;z-index:1}
+#viewer-table.sheet-grid td{vertical-align:top;padding:10px 12px;height:42px}
+#viewer-table .snapshot-formula{display:block;margin-top:6px;color:#ffb77d;font-size:12px;white-space:pre-wrap;overflow-wrap:anywhere}
+.viewer-views{flex-shrink:0}
+#viewer-table.sheet-grid .missing-result{font-size:12px}

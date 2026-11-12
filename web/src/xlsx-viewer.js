@@ -59,20 +59,60 @@ export function setupViewer(root) {
   const note=el('p','Только чтение. Формулы не пересчитываются. Сохранённые результаты могут быть устаревшими: для обновления пересчитайте и сохраните книгу в Excel. Файл остаётся в этой вкладке браузера.');note.className='hint';
   const status=el('p','Выберите файл .xlsx'); status.setAttribute('role','status');
   const bar=el('div');bar.className='sheet-bar';const label=el('label','Лист');label.htmlFor='viewer-sheet';const picker=el('select');picker.id='viewer-sheet';bar.append(label,picker);bar.hidden=true;
+  const viewLabel=el('label','Вид');viewLabel.htmlFor='viewer-mode';
+  const mode=el('select');mode.id='viewer-mode';
+  for(const [value,text] of [['sheet','Лист Excel'],['list','Список ячеек']]){const option=el('option',text);option.value=value;mode.append(option);}
+  const views=el('div');views.className='sheet-bar viewer-views';views.append(viewLabel,mode);views.hidden=true;
   const scroll=el('div');scroll.className='table-scroll';scroll.tabIndex=0;scroll.setAttribute('aria-label','Сохранённые данные Excel');const table=el('table');table.id='viewer-table';scroll.append(table);
-  const controls=el('div');controls.className='table-footer';const previous=el('button','←'),next=el('button','→'),info=el('span');controls.append(previous,info,next);controls.hidden=true;
-  root.append(open,file,note,status,bar,scroll,controls);
+  const controls=el('div');controls.className='table-footer';const previous=el('button','←'),next=el('button','→'),info=el('span');previous.setAttribute('aria-label','Предыдущая страница');next.setAttribute('aria-label','Следующая страница');controls.append(previous,info,next);controls.hidden=true;
+  root.append(open,file,note,status,bar,views,scroll,controls);
   function render(){
     const sheet=sheets[picker.selectedIndex];if(!sheet)return;table.replaceChildren();
-    const head=el('thead'),hr=el('tr');for(const title of ['Ячейка','Сохранённое значение Excel','Формула'])hr.append(el('th',title));head.append(hr);table.append(head);
+    const grid=mode.value==='sheet';table.classList.toggle('sheet-grid',grid);
+    table.setAttribute('aria-label',sheet.name);
+    const head=el('thead'),hr=el('tr');
+    const titles=grid ? ['',...Array.from({length:sheet.columns},(_,i)=>columnName(i+1))] : ['Ячейка','Сохранённое значение Excel','Формула'];
+    for(const title of titles){const th=el('th',title);th.scope='col';hr.append(th);}head.append(hr);table.append(head);
     const body=el('tbody');
-    for(const c of sheet.cells.slice(page*50,(page+1)*50)){const row=el('tr');row.append(el('th',c.address));const value=el('td',c.text);if(c.missing)value.className='missing-result';row.append(value,el('td',c.formula));body.append(row);}table.append(body);
+    if(grid && sheet.cells.length){
+      const cells=new Map(sheet.cells.map(c=>[c.address,c]));
+      table.style.width=`${Math.max(360,56+sheet.columns*180)}px`;
+      for(let r=page*50+1;r<=Math.min(sheet.rows,(page+1)*50);r++){
+        const row=el('tr'),number=el('th',r);number.scope='row';row.append(number);
+        for(let col=1;col<=sheet.columns;col++){
+          const address=columnName(col)+r,c=cells.get(address),td=el('td');td.dataset.address=address;
+          td.setAttribute('aria-label',address);
+          if(c){
+            const value=el('span',c.text);value.className=c.missing?'missing-result':'saved-value';td.append(value);
+            if(c.formula){const formula=el('small',c.formula);formula.className='snapshot-formula';td.append(formula);}
+            td.title=[address,c.text,c.formula].filter(Boolean).join(' · ');
+          }
+          row.append(td);
+        }
+        body.append(row);
+      }
+    }else if(!grid){
+      table.style.width='';
+      for(const c of sheet.cells.slice(page*50,(page+1)*50)){const row=el('tr'),address=el('th',c.address);address.scope='row';row.append(address);const value=el('td',c.text);if(c.missing)value.className='missing-result';row.append(value,el('td',c.formula));body.append(row);}
+    }else table.style.width='';
+    table.append(body);
+    const total=grid ? (sheet.cells.length?sheet.rows:0) : sheet.cells.length;
     status.textContent=sheet.cells.length ? 'Снимок файла: '+fileName : 'Пустой лист · '+fileName;
-    bar.hidden=false;controls.hidden=sheet.cells.length<=50;previous.disabled=page===0;next.disabled=(page+1)*50>=sheet.cells.length;info.textContent=`${page+1} / ${Math.max(1,Math.ceil(sheet.cells.length/50))}`;
+    bar.hidden=false;views.hidden=false;controls.hidden=total<=50;previous.disabled=page===0;next.disabled=(page+1)*50>=total;
+    info.textContent=`${page+1} / ${Math.max(1,Math.ceil(total/50))}`;
+    if(total>50 && grid)info.textContent+=` · Строки ${page*50+1}–${Math.min(total,(page+1)*50)} из ${total}`;
+    scroll.scrollTop=0;
   }
+  mode.onchange=()=>{page=0;render();};
   let fileName='';open.onclick=()=>file.click();picker.onchange=()=>{page=0;render();};previous.onclick=()=>{page--;render();};next.onclick=()=>{page++;render();};
   file.onchange=async()=>{const selected=file.files[0];file.value='';if(!selected)return;open.disabled=true;
     try {if(!/\.xlsx$/i.test(selected.name))throw new Error('Выберите файл .xlsx');if(selected.size>15*1024*1024)throw new Error('Максимальный размер Excel — 15 МБ');const {default:ExcelJS}=await import('exceljs');const loaded=await readSnapshot(await selected.arrayBuffer(),ExcelJS);sheets=loaded;fileName=selected.name;picker.replaceChildren(...sheets.map(s=>el('option',s.name)));page=0;render();}
     catch(error){status.textContent='Файл не открыт: '+error.message;}finally{open.disabled=false;}
   };
+}
+
+function columnName(column) {
+  let name='';
+  for(;column>0;column=Math.floor((column-1)/26))name=String.fromCharCode(65+(column-1)%26)+name;
+  return name;
 }

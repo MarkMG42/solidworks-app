@@ -16,6 +16,19 @@ with sync_playwright() as p:
  assert page.locator('#viewer-table').get_by_text('0',exact=True).count()==1
  assert page.locator('#viewer-table').get_by_text('false',exact=True).count()==1
  assert page.locator('#viewer-table').get_by_text('<script>alert(1)</script>',exact=True).count()==1
+ assert page.locator('#viewer-mode').input_value()=='sheet'
+ assert page.locator('#viewer-table td[data-address="A4"]').inner_text().startswith('Нет сохранённого результата')
+ page.locator('#viewer-sheet').select_option(label='Координаты')
+ assert page.locator('#viewer-table td[data-address="C3"]').inner_text()=='Исходное место'
+ assert page.locator('#viewer-table td[data-address="A1"]').inner_text()==''
+ assert page.locator('#viewer-table thead th').last.inner_text()=='AA'
+ page.get_by_role('button',name='Следующая страница',exact=True).click()
+ assert page.locator('#viewer-table td[data-address="AA55"]').inner_text()=='17\n=UNKNOWN()'
+ page.locator('#viewer-mode').select_option('list')
+ assert page.locator('#viewer-table tbody tr').count()==2
+ page.locator('#viewer-mode').select_option('sheet')
+ assert page.locator('#viewer-table td[data-address="C3"]').inner_text()=='Исходное место'
+ page.locator('#viewer-sheet').select_option(label='Данные')
  page.screenshot(path=str(root/'web/test-results/xlsx-viewer.png'),full_page=True)
  page.locator('#viewer-sheet').select_option(label='Пустой');assert page.locator('#viewer-table tbody tr').count()==0
  page.locator('#navigation button[data-id="0"]').click();page.locator('#calculator').wait_for(state='visible')
@@ -23,6 +36,9 @@ with sync_playwright() as p:
  for width in [900,640,390]:
   page.set_viewport_size({'width':width,'height':900})
   assert page.evaluate('document.documentElement.scrollWidth <= window.innerWidth+1')
+ page.locator('#xlsx-viewer input[type=file]').set_input_files({'name':'broken.xlsx','mimeType':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet','buffer':b'invalid zip'})
+ page.get_by_role('status').filter(has_text='Файл не открыт').wait_for()
+ assert page.locator('#viewer-table td[data-address="A1"] .saved-value').inner_text()=='123'
  assert not errors,errors
  browser.close()
 print('Viewer browser: cached values, formula text, missing result, empty sheet, navigation, responsive widths passed')
