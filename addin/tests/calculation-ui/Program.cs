@@ -71,7 +71,7 @@ internal static class UiChecks
                         ((TextBox)first.EditingControl).Text = "3000,5";
                         window.ClientSize = new Size(800, 600); Pump(window);
                         Check(first.EndEdit(), "Input commits after resize"); Pump(window);
-                        Check(Convert.ToString(first[1, 10].Value) == "2496,5", "Resizing preserves input and recalculation");
+                        Check(Convert.ToString(first[1, 10].Value) == "2496,5", "Resizing preserves input and recalculation: input=" + Convert.ToString(first[1, 2].Value) + "; result=" + Convert.ToString(first[1, 10].Value) + "; error=" + first[1, 2].ErrorText);
                         picker.SelectedIndex = 1; Pump(window); picker.SelectedIndex = 0; Pump(window);
                         Check(Convert.ToString(first[1, 10].Value) == "2496,5", "Switching sheets preserves edited values");
                     }
