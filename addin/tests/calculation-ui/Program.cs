@@ -73,6 +73,8 @@ internal static class UiChecks
                         ((TextBox)first.EditingControl).Text = "3000,5";
                         window.ClientSize = new Size(800, 600); Pump(window);
                         Check(first.EndEdit(), "Input commits after resize"); Pump(window);
+                        var nativeEngine = (CalculationEngine)typeof(CalculationView).GetField("engine", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).GetValue(view);
+                        Console.WriteLine("ENGINE B3=" + nativeEngine.Get("Высота узла", "B3") + "; B11=" + nativeEngine.Get("Высота узла", "B11") + "; GRID=" + first[1, 10].Value);
                         Check(Convert.ToString(first[1, 10].Value) == "2496,5", "Resizing preserves input and recalculation: input=" + Convert.ToString(first[1, 2].Value) + "; result=" + Convert.ToString(first[1, 10].Value) + "; error=" + first[1, 2].ErrorText);
                         picker.SelectedIndex = 1; Pump(window); picker.SelectedIndex = 0; Pump(window);
                         Check(Convert.ToString(first[1, 10].Value) == "2496,5", "Switching sheets preserves edited values");
