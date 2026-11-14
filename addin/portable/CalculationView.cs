@@ -172,7 +172,17 @@ namespace SWToolsHub.Portable
                 try { engine.SetInput(sheet.Name, cell.Address, e.FormattedValue); SaveInputs(); view.ErrorText = ""; }
                 catch (CalculationError ex) { e.Cancel = true; view.ErrorText = ex.Message; message.Text = ex.Message; message.ForeColor = Color.Firebrick; }
             };
-            grid.CellEndEdit += (s, e) => { if (!painting) FillValues(sheet, grid); };
+            grid.CellEndEdit += (s, e) => {
+                if (painting || e.RowIndex < 0 || e.ColumnIndex < 0) return;
+                var view = grid[e.ColumnIndex, e.RowIndex]; var cell = view.Tag as CalculationCell;
+                // EndEdit commits the control value without necessarily moving focus.
+                // CellValidating alone therefore misses Enter/programmatic commits.
+                if (cell != null && cell.Editable) {
+                    try { engine.SetInput(sheet.Name, cell.Address, view.Value); SaveInputs(); }
+                    catch (CalculationError ex) { view.ErrorText = ex.Message; message.Text = ex.Message; message.ForeColor = Color.Firebrick; return; }
+                }
+                FillValues(sheet, grid);
+            };
             grid.CurrentCellDirtyStateChanged += (s, e) => {
                 if (!painting && grid.IsCurrentCellDirty && grid.CurrentCell is DataGridViewComboBoxCell) {
                     if (grid.EndEdit()) FillValues(sheet, grid);
