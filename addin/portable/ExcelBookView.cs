@@ -113,6 +113,7 @@ namespace SWToolsHub.Portable
             Dock = DockStyle.Fill;
             AutoScaleMode = AutoScaleMode.Dpi;
             BackColor = UiTheme.Background;
+            ForeColor = UiTheme.Text;
             Padding = new Padding(10);
             using (var themeFont = UiTheme.CreateRegularFont())
                 Font = new Font(themeFont.FontFamily, 9f);
@@ -158,6 +159,15 @@ namespace SWToolsHub.Portable
                 Text = "Развернуть / свернуть",
                 AutoSize = true
             };
+            foreach (var button in new[] { save, undo, delete, expand, apply }) {
+                button.FlatStyle = FlatStyle.Flat;
+                button.FlatAppearance.BorderColor = UiTheme.Border;
+                button.BackColor = UiTheme.Background;
+                button.ForeColor = UiTheme.Text;
+                button.Padding = new Padding(8, 4, 8, 4);
+                button.Cursor = Cursors.Hand;
+            }
+            sheets.BackColor = UiTheme.Background; sheets.ForeColor = UiTheme.Text;
             tools.Controls.AddRange(new Control[] { save, undo, delete, expand });
             save.Click += (s, e) => SaveAs();
             undo.Click += (s, e) =>
