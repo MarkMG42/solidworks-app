@@ -1,45 +1,6 @@
-SW-Assistant: первое открытие и адаптивная компоновка расчётов
+Source: 975ae9f36f38eeec9eea4769bcafc8e6e024f986
+Windows runner: Windows Server 2022 x64
+Numerical, library and native WinForms checks: PASS
+ZIP CRC, packaged EXE/DLL equality and SHA-256: PASS
+SolidWorks/VBA: not executed
 
-Текущая среда: Linux x64, SDK 8.0.427. Сборка Windows net48 x64.
-
-  Determining projects to restore...
-  All projects are up-to-date for restore.
-  SWToolsHub.Portable -> /workspace/solidworks-app/addin/portable/bin/Release/net48/SW-Assistant.exe
-
-Build succeeded.
-    0 Warning(s)
-    0 Error(s)
-
-Time Elapsed 00:00:00.75
-
-Расчет толщины стенки труб.xlsx: compared 19 formula cells
-Расчет длины болта.xlsx: compared 77 formula cells
-Расчет балки.xlsx: compared 5765 formula cells
-Расчет болта, шва на прочность.xlsx: compared 30 formula cells
-Расчет высоты узла.xlsx: compared 3 formula cells
-Independent spreadsheet scenarios executed: 256
-Calculation checks: 10284/10284 passed; 0 failed
-
-Браузерный макет: 900/800/640/480 px, без переполнения страницы. Это макет, не WinForms-тест.
-Calculation.UiChecks.csproj: скомпилирован Release net48, 0 ошибок/предупреждений.
-Native Windows-проверка НЕ ЗАПУСКАЛАСЬ: в среде нет Windows/.NET Framework runtime. Команда и сценарии — addin/tests/calculation-ui/README.md.
-Из кода устранена зависимость от SelectedTab до создания handles: первый лист создаётся в конструкторе, активируется при OnLoad и после показа.
-Формулы, исходные Excel и модель не менялись. Изменения относятся к выбору листов, загрузке первого листа, размерам таблиц, переносу кнопок и ограничению ширины панелей.
-
-SW-Assistant-Portable.zip SHA256 bd6edd98acf4be024933f50d9afb39df58270330c71658c9c88bcc10bb682b76; ZIP and extracted files verified
-SW-Assistant-Calculations.zip SHA256 bd6edd98acf4be024933f50d9afb39df58270330c71658c9c88bcc10bb682b76; ZIP and extracted files verified
-
-=== Обновление 12 ноября 2026: просмотр XLSX ===
-Предыдущие записи и хэши выше — история предыдущих сборок.
-Linux x64, .NET SDK 8.0.428, Release net48 x64, interop API 2024.
-Сборка: 0 ошибок, 0 предупреждений. Численные проверки: 10284/10284.
-Xlsx.Checks: сохранённый результат, отсутствующий кэш, 0, FALSE,
-пустая строка, ошибка Excel, произвольный путь части листа и пустой лист — PASS.
-Веб: 25 групп npm test, production build, browser_smoke/custom/design/viewer — PASS.
-GitHub Pages build/deploy/Verify published website — SUCCESS:
-https://github.com/MarkMG42/solidworks-app/actions/runs/43175720218
-Оба ZIP пересозданы из новой сборки b5495c4; CRC и соответствие EXE проверены.
-Скачанный с GitHub канонический ZIP имеет тот же SHA-256.
-SW-Assistant-Portable.zip SHA256 635b68cbfd49b80edee12389fe99516e8b84bd3132b35dd81ff47b60883d4945
-SW-Assistant-Calculations.zip SHA256 635b68cbfd49b80edee12389fe99516e8b84bd3132b35dd81ff47b60883d4945
-Windows/WinForms/SolidWorks/VBA не запускались; требуется native-приёмка.

@@ -1,0 +1,3 @@
+SW-Assistant Portable
+Source: 975ae9f36f38eeec9eea4769bcafc8e6e024f986
+Windows x64, .NET Framework 4.8
