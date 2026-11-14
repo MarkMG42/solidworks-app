@@ -37,6 +37,7 @@ jobs:
           dotnet run --project addin/tests/excel-library/Excel.LibraryChecks.csproj -c Release
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
       - name: Build native Windows application
+        id: native-build
         shell: pwsh
         run: |
           $interop = Join-Path $env:GITHUB_WORKSPACE 'installer/calculations/Portable/SW-Assistant'
@@ -50,6 +51,7 @@ jobs:
           & 'addin/tests/calculation-ui/bin/Release/net48/Calculation.UiChecks.exe' 'artifacts/calculation-ui'
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
       - name: Actual WinForms Excel UI checks
+        if: ${{ !cancelled() && steps.native-build.outcome == 'success' }}
         shell: pwsh
         run: |
           dotnet build addin/tests/excel-ui/Excel.UiChecks.csproj -c Release

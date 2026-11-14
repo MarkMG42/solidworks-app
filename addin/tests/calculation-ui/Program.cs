@@ -75,7 +75,10 @@ internal static class UiChecks
                         first.NotifyCurrentCellDirty(true);
                         Check(first.IsCurrentCellDirty, "Harness input is marked changed");
                         window.ClientSize = new Size(800, 600); Pump(window);
-                        Check(first.EndEdit(), "Input commits after resize"); Pump(window);
+                        Check(first.EndEdit(), "Input commits after resize");
+                        // Leaving the cell is the same validation boundary as Tab.
+                        // A CI desktop need not grant keyboard focus to this form.
+                        first.CurrentCell = first[0, 0]; Pump(window);
                         Check(Convert.ToString(first[1, 10].Value) == "2496,5", "Resizing preserves input and recalculation: input=" + Convert.ToString(first[1, 2].Value) + "; result=" + Convert.ToString(first[1, 10].Value) + "; error=" + first[1, 2].ErrorText);
                         picker.SelectedIndex = 1; Pump(window); picker.SelectedIndex = 0; Pump(window);
                         Check(Convert.ToString(first[1, 10].Value) == "2496,5", "Switching sheets preserves edited values");
