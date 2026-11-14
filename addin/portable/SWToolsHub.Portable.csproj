@@ -3,7 +3,7 @@
     <TargetFramework>net48</TargetFramework><OutputType>WinExe</OutputType>
     <PlatformTarget>x64</PlatformTarget><UseWindowsForms>true</UseWindowsForms>
     <AssemblyName>SW-Assistant</AssemblyName><Product>SW-Assistant</Product><ApplicationIcon>Assets/AppIcon.ico</ApplicationIcon><LangVersion>latest</LangVersion>
-    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationManifest>app.manifest</ApplicationManifest><AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects><GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
     <SolidWorksInteropPath Condition="'$(SolidWorksInteropPath)' == ''">C:\Program Files\SOLIDWORKS Corp\SOLIDWORKS\api\redist</SolidWorksInteropPath>
   </PropertyGroup>
   <ItemGroup>
@@ -16,5 +16,7 @@
     <Reference Include="System.Xml.Linq" />
     <Reference Include="SolidWorks.Interop.sldworks"><HintPath>$(SolidWorksInteropPath)\SolidWorks.Interop.sldworks.dll</HintPath><EmbedInteropTypes>false</EmbedInteropTypes><Private>true</Private></Reference>
     <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
+    <PackageReference Include="ClosedXML" Version="0.104.2" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
   </ItemGroup>
 </Project>

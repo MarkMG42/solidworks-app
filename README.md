@@ -10,6 +10,12 @@
 
 Версия с левым переключением «Макросы / Расчёты» и пятью расчётами сохранена отдельно: [пакет с расчётами](installer/calculations/SW-Assistant-Calculations.zip), [инструкция и проверка](installer/calculations/README.md). Для расчётов Excel и запущенный SolidWorks не нужны; программа требует Windows x64 и .NET Framework 4.8.
 
+## Excel в Windows-приложении
+
+«Добавить расчёт» выбирает несколько XLSX и добавляет их отдельными пунктами слева. Книги и введённые значения сохраняются между запусками, доступны списки Excel, исходное оформление и поддерживаемая окраска строк. **«Сохранить XLSX…»** позволяет выбрать папку и имя файла. Листы переключаются внизу; × удаляет только локальную копию выбранной книги. Для переноса из веб-версии скачайте книги и добавьте их в Windows-приложение.
+
+Новая сборка проверяется workflow [Windows Portable](.github/workflows/windows-portable.yml): численные эталоны, работа с книгами и настоящие WinForms-контролы на Windows runner; затем публикуются ZIP и SHA-256. SolidWorks/VBA в CI не запускаются.
+
 ## Скачать программу
 
 [Скачать SW-Assistant-Portable.zip](https://github.com/MarkMG42/solidworks-app/raw/refs/heads/main/installer/SW-Assistant-Portable.zip)

@@ -49,6 +49,7 @@ namespace SWToolsHub.Portable
         private readonly Panel calculationHost = new Panel { Dock = DockStyle.Fill, Visible = false };
         private readonly Dictionary<int, CalculationView> calculationViews = new Dictionary<int, CalculationView>();
         private CalculationBook[] calculationBooks;
+        private readonly Dictionary<string,ExcelBookView> excelViews = new Dictionary<string,ExcelBookView>();
 
         private TableLayoutPanel header;
         private RoundedPanel searchBox;
@@ -199,15 +200,6 @@ namespace SWToolsHub.Portable
                 foreach (Control child in calculationHost.Controls) child.Visible = child == view;
                 calculationsActive = true; viewport.Visible = false; calculationHost.Visible = true; view.BringToFront(); view.ActivateSheet();
             };
-            XlsxSnapshotView snapshotView = null;
-            var snapshotButton = MakeButton("Просмотр XLSX"); snapshotButton.Width = 145; snapshotButton.Height = 54;
-            snapshotButton.Click += (sender, args) => {
-                if (busy || editingHotkeys) return;
-                if (snapshotView == null) { snapshotView = new XlsxSnapshotView(); calculationHost.Controls.Add(snapshotView); }
-                foreach (Control child in calculationHost.Controls) child.Visible = child == snapshotView;
-                calculationsActive = true; viewport.Visible = false; calculationHost.Visible = true; snapshotView.BringToFront();
-            };
-            navigation.Controls.Add(snapshotButton);
             string[] titles = { "Стенка трубы", "Длина болта", "Балка", "Болты и швы", "Высота узла" };
             for (int i = 0; i < titles.Length; i++) {
                 int index = i;
@@ -221,6 +213,60 @@ namespace SWToolsHub.Portable
                 };
                 navigation.Controls.Add(button);
             }
+            ExcelLibrary library;
+            try { library = new ExcelLibrary(); }
+            catch (Exception ex) { status.Text = "Библиотека Excel недоступна: " + ex.Message; return; }
+            Action<ExcelEntry,ExcelBook> openBook = (entry, loaded) => {
+                if (busy || editingHotkeys) { loaded?.Dispose(); return; }
+                try {
+                    ExcelBookView view;
+                    if (!excelViews.TryGetValue(entry.Id, out view)) {
+                        view = new ExcelBookView(library, entry, loaded);
+                        excelViews.Add(entry.Id, view); calculationHost.Controls.Add(view);
+                        view.ExpandRequested += () => navigation.Visible = !navigation.Visible;
+                    } else loaded?.Dispose();
+                    foreach (Control child in calculationHost.Controls) child.Visible = child == view;
+                    calculationsActive = true; viewport.Visible = false; calculationHost.Visible = true; view.BringToFront();
+                } catch (Exception ex) { loaded?.Dispose(); ShowError("Не удалось открыть книгу: " + ex.Message); }
+            };
+            Action<ExcelEntry> addBookButton = entry => {
+                var row = new FlowLayoutPanel { Width = 155, Height = 58, WrapContents = false, Margin = new Padding(0) };
+                var bookButton = MakeButton(entry.Title); bookButton.Width = 120; bookButton.Height = 54;
+                var remove = MakeButton("×"); remove.Width = 28; remove.Height = 54; tips.SetToolTip(remove,"Удалить таблицу " + entry.Title);
+                Action delete = () => {
+                    if (MessageBox.Show(this, "Удалить «" + entry.Title + "» из приложения вместе с сохранённым вводом? Исходный файл на компьютере останется.", "Удалить таблицу", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
+                    try {
+                        ExcelBookView view; if (excelViews.TryGetValue(entry.Id, out view)) { calculationHost.Controls.Remove(view); excelViews.Remove(entry.Id); view.Dispose(); }
+                        library.Delete(entry); navigation.Controls.Remove(row); row.Dispose();
+                        calculationsActive = false; calculationHost.Visible = false; viewport.Visible = true; navigation.Visible = true; ReloadFolder(); RefreshLayout();
+                    } catch(Exception ex) { ShowError("Не удалось удалить книгу: " + ex.Message); }
+                };
+                bookButton.Click += (s,e) => { openBook(entry,null); ExcelBookView view; if(excelViews.TryGetValue(entry.Id,out view)) { view.DeleteRequested -= delete; view.DeleteRequested += delete; } };
+                remove.Click += (s,e) => delete(); row.Controls.Add(bookButton); row.Controls.Add(remove); navigation.Controls.Add(row);
+            };
+            foreach (var entry in library.Entries()) addBookButton(entry);
+            var addExcel = MakeButton("＋ Добавить расчёт"); addExcel.Width = 145; addExcel.Height = 54;
+            addExcel.Click += (s,e) => {
+                if (busy || editingHotkeys) return;
+                using (var dialog = new OpenFileDialog { Filter = "Книги Excel (*.xlsx)|*.xlsx", Multiselect = true }) {
+                    if (dialog.ShowDialog(this) != DialogResult.OK) return;
+                    var errors = new List<string>(); ExcelEntry first = null; ExcelBook firstBook = null;
+                    foreach (string file in dialog.FileNames) {
+                        ExcelBook loaded = null;
+                        try {
+                            if (new FileInfo(file).Length > 15 * 1024 * 1024) throw new InvalidDataException("Максимальный размер XLSX — 15 МБ");
+                            byte[] bytes = File.ReadAllBytes(file); loaded = new ExcelBook(bytes); var entry = library.Add(Path.GetFileName(file),bytes); addBookButton(entry);
+                            if (first == null) { first = entry; firstBook = loaded; loaded = null; }
+                        } catch(Exception ex) { errors.Add(Path.GetFileName(file) + ": " + ex.Message); }
+                        finally { loaded?.Dispose(); }
+                    }
+                    navigation.Controls.SetChildIndex(addExcel,navigation.Controls.Count-1);
+                    if(first != null) { openBook(first,firstBook); var row = navigation.Controls.OfType<FlowLayoutPanel>().FirstOrDefault(r => r.Controls.OfType<Button>().Any(b => b.Text == first.Title)); row?.Controls.OfType<Button>().First().PerformClick(); }
+                    if(errors.Count>0)ShowError("Не все файлы добавлены:\n" + string.Join("\n",errors));
+                }
+            };
+            navigation.Controls.Add(addExcel);
+            FormClosing += (s,e) => { if(!busy && excelViews.Values.Any(v => v.Unsaved) && MessageBox.Show(this,"Есть несохранённые изменения Excel. Закрыть приложение?","Несохранённый ввод",MessageBoxButtons.YesNo,MessageBoxIcon.Warning)!=DialogResult.Yes){e.Cancel=true;closing=false;} };
         }
         private void Filter()
         {

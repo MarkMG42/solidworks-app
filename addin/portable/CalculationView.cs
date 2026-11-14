@@ -12,6 +12,8 @@ namespace SWToolsHub.Portable
     internal sealed class CalculationView : UserControl
     {
         private readonly CalculationEngine engine;
+        private readonly string inputPath;
+        private string saveError;
         private readonly ComboBox sheetPicker = new ComboBox { Name = "CalculationSheetPicker", Dock = DockStyle.Fill, DropDownStyle = ComboBoxStyle.DropDownList, IntegralHeight = false, MaxDropDownItems = 12 };
         private readonly Panel sheetHost = new Panel { Name = "CalculationSheetHost", Dock = DockStyle.Fill, Margin = new Padding(0) };
         private readonly Label message = new Label { AutoSize = true, Dock = DockStyle.Fill, Padding = new Padding(4, 6, 4, 6), Margin = new Padding(0) };
@@ -36,6 +38,9 @@ namespace SWToolsHub.Portable
         public CalculationView(CalculationBook book)
         {
             engine = new CalculationEngine(book);
+            inputPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "SW-Assistant", "CalculationInputs", book.Sha256 + ".json");
+            try { if (File.Exists(inputPath)) engine.LoadSession(new JavaScriptSerializer().Deserialize<CalculationSession>(File.ReadAllText(inputPath))); }
+            catch { saveError = "Сохранённый ввод не прочитан; показаны исходные значения."; }
             Dock = DockStyle.Fill; BackColor = UiTheme.Background; AutoScaleMode = AutoScaleMode.Dpi;
             using (var themeFont = UiTheme.CreateFont()) compactFont = new Font(themeFont.FontFamily, 9f, FontStyle.Regular);
             Font = compactFont;
@@ -76,7 +81,7 @@ namespace SWToolsHub.Portable
             sheetPicker.SelectedIndexChanged += (s, e) => ShowSheet();
             reset.Click += (s, e) => {
                 if (MessageBox.Show(this, "Вернуть исходные значения всех листов этого расчёта?", "Сброс расчёта", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
-                engine.Reset(); foreach (var pair in grids) FillValues(pair.Key, pair.Value); ShowSheet();
+                engine.Reset(); SaveInputs(); foreach (var pair in grids) FillValues(pair.Key, pair.Value); ShowSheet();
             };
             export.Click += (s, e) => Export();
             // ComboBox selection is managed and available before native handles exist.
@@ -164,7 +169,7 @@ namespace SWToolsHub.Portable
                 if (painting || e.RowIndex < 0 || e.ColumnIndex < 0) return;
                 var view = grid[e.ColumnIndex, e.RowIndex]; var cell = view.Tag as CalculationCell;
                 if (cell == null || !cell.Editable) return;
-                try { engine.SetInput(sheet.Name, cell.Address, e.FormattedValue); view.ErrorText = ""; }
+                try { engine.SetInput(sheet.Name, cell.Address, e.FormattedValue); SaveInputs(); view.ErrorText = ""; }
                 catch (CalculationError ex) { e.Cancel = true; view.ErrorText = ex.Message; message.Text = ex.Message; message.ForeColor = Color.Firebrick; }
             };
             grid.CellEndEdit += (s, e) => { if (!painting) FillValues(sheet, grid); };
@@ -201,8 +206,12 @@ namespace SWToolsHub.Portable
                         view.ErrorText = "";
                     } catch (CalculationError ex) { view.Value = "Ошибка расчёта"; view.ErrorText = ex.Message; view.Style.ForeColor = Color.Firebrick; errors++; }
                 }
-                message.ForeColor = invalid != null || errors > 0 ? Color.Firebrick : UiTheme.Muted;
-                message.Text = invalid ?? (errors > 0 ? "Есть ошибки расчёта. Наведите на значок ошибки у результата." : "Источник: " + engine.Book.Source + " · Ctrl+C — копировать.");
+                if (engine.Book.Source.Contains("длины болта") && sheet.Name == "Длина болта") {
+                    hint.Text = "Расчётная длина болта, мм: " + (invalid != null ? "Проверьте исходные данные" : Convert.ToString(Format(engine.Get(sheet.Name, "B19"), "0", false)));
+                    hint.ForeColor = invalid != null ? Color.Firebrick : UiTheme.Text;
+                } else hint.Text = "Светлые ячейки — ввод. Enter или Tab — применить.";
+                message.ForeColor = saveError != null || invalid != null || errors > 0 ? Color.Firebrick : UiTheme.Muted;
+                message.Text = saveError ?? invalid ?? (errors > 0 ? "Есть ошибки расчёта. Наведите на значок ошибки у результата." : "Источник: " + engine.Book.Source + " · Ctrl+C — копировать.");
             } finally { painting = false; }
         }
         private static object Format(object value, string format, bool input)
@@ -227,7 +236,7 @@ namespace SWToolsHub.Portable
                     var serializer = new JavaScriptSerializer { MaxJsonLength = 1000000 };
                     if (load) {
                         engine.LoadSession(serializer.Deserialize<CalculationSession>(File.ReadAllText(dialog.FileName)));
-                        foreach (var pair in grids) FillValues(pair.Key, pair.Value);
+                        SaveInputs(); foreach (var pair in grids) FillValues(pair.Key, pair.Value);
                         ShowSheet();
                     } else SettingsFile.Write(dialog.FileName, serializer.Serialize(engine.SaveSession()));
                 } catch (Exception ex) { MessageBox.Show(this, "Не удалось " + (load ? "открыть" : "сохранить") + " исходные данные: " + ex.Message, "Исходные данные", MessageBoxButtons.OK, MessageBoxIcon.Error); }
@@ -250,6 +259,11 @@ namespace SWToolsHub.Portable
                     }
                 } catch (Exception ex) { MessageBox.Show(this, "Не удалось сохранить таблицу: " + ex.Message, "Сохранение", MessageBoxButtons.OK, MessageBoxIcon.Error); }
             }
+        }
+        private void SaveInputs()
+        {
+            try { SettingsFile.Write(inputPath, new JavaScriptSerializer().Serialize(engine.SaveSession())); saveError = null; }
+            catch (Exception ex) { saveError = "Автосохранение ввода не удалось: " + ex.Message; }
         }
         private static string Csv(string value)
         {

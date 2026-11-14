@@ -1,0 +1,90 @@
+name: Windows Portable — build, native UI checks and ZIP
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'addin/portable/**'
+      - 'addin/tests/**'
+      - 'installer/build-portable.py'
+      - 'installer/calculations/package.py'
+      - 'installer/licenses/**'
+      - '.github/workflows/windows-portable.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: windows-portable
+  cancel-in-progress: true
+jobs:
+  portable:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Numerical and library checks
+        shell: pwsh
+        run: |
+          dotnet run --project addin/tests/calculations/Calculation.Checks.csproj -c Release
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          dotnet run --project addin/tests/folder/Folder.Checks.csproj -c Release
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          dotnet run --project addin/tests/hotkeys/Hotkey.Checks.csproj -c Release
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          dotnet run --project addin/tests/xlsx-viewer/Xlsx.Checks.csproj -c Release
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          dotnet run --project addin/tests/excel-library/Excel.LibraryChecks.csproj -c Release
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+      - name: Build native Windows application
+        shell: pwsh
+        run: |
+          $interop = Join-Path $env:GITHUB_WORKSPACE 'installer/calculations/Portable/SW-Assistant'
+          dotnet build addin/portable/SWToolsHub.Portable.csproj -c Release "-p:SolidWorksInteropPath=$interop"
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+      - name: Existing native calculation UI checks
+        shell: pwsh
+        run: |
+          dotnet build addin/tests/calculation-ui/Calculation.UiChecks.csproj -c Release
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          & 'addin/tests/calculation-ui/bin/Release/net48/Calculation.UiChecks.exe' 'artifacts/calculation-ui'
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+      - name: Actual WinForms Excel UI checks
+        shell: pwsh
+        run: |
+          dotnet build addin/tests/excel-ui/Excel.UiChecks.csproj -c Release
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          & 'addin/tests/excel-ui/bin/Release/net48/Excel.UiChecks.exe' 'artifacts/excel-ui'
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+      - name: Package and verify downloadable ZIP
+        shell: pwsh
+        run: |
+          python installer/build-portable.py
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          python installer/calculations/package.py
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          $text = "Source: $env:GITHUB_SHA`nWindows runner: Windows Server 2022 x64`nNumerical, library and native WinForms checks: PASS`nZIP CRC, packaged EXE/DLL equality and SHA-256: PASS`nSolidWorks/VBA: not executed`n"
+          Set-Content -Path installer/calculations/verification.txt -Value $text -Encoding utf8
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: windows-portable-and-native-screenshots
+          path: |
+            artifacts/
+            installer/SW-Assistant-Portable.zip
+            installer/PORTABLE-SHA256.txt
+            installer/calculations/verification.txt
+      - name: Publish tested archives
+        shell: pwsh
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add installer/SW-Assistant-Portable.zip installer/PORTABLE-SHA256.txt installer/calculations/SW-Assistant-Calculations.zip installer/calculations/SHA256.txt installer/calculations/Portable installer/calculations/verification.txt
+          git diff --cached --quiet
+          if ($LASTEXITCODE -eq 0) { exit 0 }
+          git commit -m "Опубликовать проверенный Windows Portable ZIP"
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          git pull --rebase origin main
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          git push origin HEAD:main
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }

@@ -37,7 +37,7 @@ with sync_playwright() as p:
  page.screenshot(path=str(root/'web/test-results/xlsx-viewer.png'),full_page=True)
  page.locator('#viewer-sheet').select_option(label='Пустой');assert page.locator('#viewer-table tbody tr').count()==1
  page.locator('#navigation button[data-id="0"]').click();page.locator('#calculator').wait_for(state='visible')
- page.locator('#navigation button[data-id="viewer"]').click();page.locator('#viewer-sheet').select_option(label='Данные')
+ page.locator('#navigation button[data-id^="xlsx-"]').first.click();page.locator('#viewer-sheet').select_option(label='Данные')
  for width in [900,640,390]:
   page.set_viewport_size({'width':width,'height':900})
   assert page.evaluate('document.documentElement.scrollWidth <= window.innerWidth+1')

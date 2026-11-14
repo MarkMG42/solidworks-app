@@ -152,10 +152,10 @@ function renderSheet() {
     const sectionCell=table.querySelector('.section-row:first-child td');if(sectionCell)sectionCell.colSpan=Math.min(columns,3);
     table.setAttribute('aria-label','Исходные данные и полная таблица расчёта');
     const heading=element('h2',null,'Результаты расчёта');cards.append(heading);
-    for(const c of sheet.Cells.filter(c=>c.Expression)){
+    for(const c of sheet.Cells.filter(c=>c.Expression).sort((a,b)=>activeId===1&&sheet.Name==='Длина болта'?(a.Address==='B19'?-1:b.Address==='B19'?1:a.Row-b.Row):a.Row-b.Row)){
       const card=element('div','metric-card');
       const label=sheet.Cells.filter(v=>v.Row===c.Row && v.Column<c.Column && !v.Expression).map(v=>v.Value).filter(v=>v!=null).join(' · ');
-      card.append(element('div','metric-label',label || c.Address));
+      card.append(element('div','metric-label',activeId===1&&sheet.Name==='Длина болта'&&c.Address==='B19'?'Расчётная длина болта, мм':label || c.Address));
       const output=element('span','result');output.dataset.summary=c.Address;card.append(output);
       const unit=sheet.Cells.find(v=>v.Row===c.Row && v.Column===c.Column+1 && !v.Expression && !v.Editable);
       if(unit?.Value)card.append(element('small','metric-unit',unit.Value));
@@ -242,7 +242,7 @@ function addNavigation(id,label){
   button.append(element('span','nav-icon',isCustom(id)||isNative(id)?'◇':id==='macros'||id==='viewer'?'◇':String(id+1).padStart(2,'0')),element('span',null,label));button.addEventListener('click',()=>navigate(id));
   if(isNative(id)){const row=element('div','nav-book');row.dataset.book=id;const remove=element('button','nav-book-delete','×');remove.type='button';remove.title='Удалить таблицу';remove.setAttribute('aria-label','Удалить таблицу '+label);remove.addEventListener('click',()=>removeExcelBook(id));row.append(button,remove);$('navigation').append(row);}else $('navigation').append(button);
 }
-for(const [id,label] of [['macros','Макросы'],['viewer','Таблицы Excel'],...labels.map((v,i)=>[i,v])]){
+for(const [id,label] of [['macros','Макросы'],...labels.map((v,i)=>[i,v])]){
   addNavigation(id,label);
 }
 function hashId(){const raw=location.hash.replace(/^#calc-/,'');return raw==='viewer'?'viewer':location.hash==='#macros'?'macros':customBooks.has(raw)||nativeBooks.has(raw)?raw:/^[0-4]$/.test(raw)?Number(raw):0;}
@@ -293,7 +293,7 @@ $('version').textContent=version==='dev'?'':version.slice(0,7);
 window.addEventListener('hashchange',()=>{const id=hashId();if(id!==activeId)navigate(id);});
 try{
   const r=await fetch(dataURL('catalog.json'));if(!r.ok)throw new Error('Не удалось загрузить расчёты. Нажмите «Обновить приложение».');catalog=await r.json();
-  try { const db=await modelStore(); const models=await new Promise((resolve,reject)=>{const r=db.transaction('models').objectStore('models').getAll();r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);});for(const book of models)if(book.Custom && book.Id){customBooks.set(book.Id,book);labels[book.Id]=book.Title;addNavigation(book.Id,book.Title);} } catch { announce('Хранилище пользовательских расчётов недоступно.',true); }
-  try{const books=await listBooks();for(const book of books.sort((a,b)=>a.created-b.created)){nativeBooks.set(book.id,book);addNavigation(book.id,book.title);}}catch{announce('Хранилище Excel-таблиц недоступно.',true);}
+  try { const db=await modelStore(); const models=await new Promise((resolve,reject)=>{const r=db.transaction('models').objectStore('models').getAll();r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);});for(const book of models)if(book.Custom && book.Id){if(book.Title?.trim().toLowerCase()==='врезки')continue;customBooks.set(book.Id,book);labels[book.Id]=book.Title;addNavigation(book.Id,book.Title);} } catch { announce('Хранилище пользовательских расчётов недоступно.',true); }
+  try{const books=await listBooks();for(const book of books.sort((a,b)=>a.created-b.created)){if(book.title.trim().toLowerCase()==='врезки')continue;nativeBooks.set(book.id,book);addNavigation(book.id,book.title);}}catch{announce('Хранилище Excel-таблиц недоступно.',true);}
   await navigate(hashId());
 }catch(error){$('loading').hidden=true;announce(error.message,true);$('main').setAttribute('aria-busy','false');}
