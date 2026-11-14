@@ -108,7 +108,10 @@ internal static class NativeExcelUiChecks
                 {
                     window.ClientSize = size;
                     Pump(window);
+                    Console.WriteLine("GEOMETRY " + size + "; form=" + window.ClientSize + "; view=" + view.Bounds + "; grid=" + grid.Bounds + "; picker=" + picker.PointToScreen(Point.Empty) + "; apply=" + apply.PointToScreen(Point.Empty));
                     Check(grid.Width > 0 && grid.Height > 0, "Worksheet stays visible " + size);
+                    Check(picker.PointToScreen(new Point(picker.Width, picker.Height)).Y <= view.PointToScreen(new Point(view.Width, view.Height)).Y, "Bottom selector stays inside window " + size);
+                    Check(apply.PointToScreen(new Point(apply.Width, apply.Height)).X <= view.PointToScreen(new Point(view.Width, view.Height)).X, "Apply button stays inside window " + size);
                     Check(picker.Width > 0 && picker.Right <= picker.Parent.Width, "Bottom selector fits " + size);
                 }
 
