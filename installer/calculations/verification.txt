@@ -1,4 +1,4 @@
-Source: 9f1b744edcf9035991839f0302b73299ff41f6a6
+Source: 1e42c3534dc218bfcf2f4afd79343026ab2408ad
 Windows runner: Windows Server 2022 x64
 Numerical, library and native WinForms checks: PASS
 ZIP CRC, packaged EXE/DLL equality and SHA-256: PASS
