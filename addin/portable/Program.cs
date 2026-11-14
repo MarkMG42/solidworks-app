@@ -47,8 +47,6 @@ namespace SWToolsHub.Portable
         private TableLayoutPanel shell;
         private bool calculationsActive;
         private readonly Panel calculationHost = new Panel { Dock = DockStyle.Fill, Visible = false };
-        private readonly Dictionary<int, CalculationView> calculationViews = new Dictionary<int, CalculationView>();
-        private CalculationBook[] calculationBooks;
         private readonly Dictionary<string,ExcelBookView> excelViews = new Dictionary<string,ExcelBookView>();
 
         private TableLayoutPanel header;
@@ -181,38 +179,16 @@ namespace SWToolsHub.Portable
         private void InitializeCalculations()
         {
             // Keep macro UI intact; the new navigation occupies only the left edge.
-            var navigation = new FlowLayoutPanel { Dock = DockStyle.Left, Width = 170, Padding = new Padding(6, 14, 6, 6), FlowDirection = FlowDirection.TopDown, WrapContents = false, AutoScroll = true, BackColor = Background };
+            var navigation = new FlowLayoutPanel { Dock = DockStyle.Left, Width = 218, Padding = new Padding(18, 28, 18, 12), FlowDirection = FlowDirection.TopDown, WrapContents = false, AutoScroll = true, BackColor = Color.FromArgb(10,22,42) };
             Controls.Add(calculationHost); Controls.Add(navigation);
-            var macroButton = MakeButton("Макросы"); macroButton.Width = 145;
+            var macroButton = MakeButton("Макросы"); macroButton.Width = 182;
+            navigation.Controls.Add(new Label { Text = "◇  SW-Assistant", AutoSize = true, ForeColor = Color.White, Font = UiTheme.CreateSemiBoldFont(16), Margin = new Padding(0,0,0,24) });
             navigation.Controls.Add(macroButton);
             macroButton.Click += (s, e) => {
                 if (busy || editingHotkeys) return;
                 calculationsActive = false; calculationHost.Visible = false; viewport.Visible = true;
                 ReloadFolder(); RefreshLayout(); RefreshConnection();
             };
-            Action<int> show = index => {
-                if (busy || editingHotkeys) return;
-                CalculationView view;
-                if (!calculationViews.TryGetValue(index, out view)) {
-                    view = new CalculationView(calculationBooks[index]);
-                    calculationViews.Add(index, view); calculationHost.Controls.Add(view);
-                }
-                foreach (Control child in calculationHost.Controls) child.Visible = child == view;
-                calculationsActive = true; viewport.Visible = false; calculationHost.Visible = true; view.BringToFront(); view.ActivateSheet();
-            };
-            string[] titles = { "Стенка трубы", "Длина болта", "Балка", "Болты и швы", "Высота узла" };
-            for (int i = 0; i < titles.Length; i++) {
-                int index = i;
-                var button = MakeButton(titles[i]); button.Width = 145; button.Height = 54;
-                button.Click += (sender, args) => {
-                    if (busy || editingHotkeys) return;
-                    try {
-                        if (calculationBooks == null) calculationBooks = CalculationView.LoadBooks();
-                        show(index);
-                    } catch (Exception ex) { ShowError("Не удалось открыть расчёт: " + ex.Message); }
-                };
-                navigation.Controls.Add(button);
-            }
             ExcelLibrary library;
             try { library = new ExcelLibrary(); }
             catch (Exception ex) { status.Text = "Библиотека Excel недоступна: " + ex.Message; return; }
@@ -231,7 +207,7 @@ namespace SWToolsHub.Portable
             };
             Action<ExcelEntry> addBookButton = entry => {
                 var row = new FlowLayoutPanel { Width = 155, Height = 58, WrapContents = false, Margin = new Padding(0) };
-                var bookButton = MakeButton(entry.Title); bookButton.Width = 120; bookButton.Height = 54;
+                var bookButton = MakeButton(entry.Title); bookButton.Width = 150; bookButton.Height = 54;
                 var remove = MakeButton("×"); remove.Width = 28; remove.Height = 54; tips.SetToolTip(remove,"Удалить таблицу " + entry.Title);
                 Action delete = () => {
                     if (MessageBox.Show(this, "Удалить «" + entry.Title + "» из приложения вместе с сохранённым вводом? Исходный файл на компьютере останется.", "Удалить таблицу", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
@@ -245,7 +221,7 @@ namespace SWToolsHub.Portable
                 remove.Click += (s,e) => delete(); row.Controls.Add(bookButton); row.Controls.Add(remove); navigation.Controls.Add(row);
             };
             foreach (var entry in library.Entries()) addBookButton(entry);
-            var addExcel = MakeButton("＋ Добавить расчёт"); addExcel.Width = 145; addExcel.Height = 54;
+            var addExcel = MakeButton("＋ Добавить расчёт"); addExcel.Width = 182; addExcel.Height = 54;
             addExcel.Click += (s,e) => {
                 if (busy || editingHotkeys) return;
                 using (var dialog = new OpenFileDialog { Filter = "Книги Excel (*.xlsx)|*.xlsx", Multiselect = true }) {

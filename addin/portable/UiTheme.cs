@@ -13,28 +13,28 @@ namespace SWToolsHub.Portable
 {
     internal static class UiTheme
     {
-        public static readonly Color Background = Color.FromArgb(253, 252, 248);
-        public static readonly Color Surface = Color.FromArgb(253, 252, 248);
-        public static readonly Color Text = Color.FromArgb(36, 35, 31);
-        public static readonly Color Muted = Color.FromArgb(112, 109, 97);
-        public static readonly Color Card = Color.FromArgb(253, 252, 248);
-        public static readonly Color Selected = Color.FromArgb(253, 252, 248);
-        public static readonly Color Accent = Color.FromArgb(112, 109, 97);
-        public static readonly Color OnCard = Color.FromArgb(36, 35, 31);
-        public static readonly Color Border = Color.FromArgb(227, 220, 207);
-        public static readonly Color IconInk = Color.FromArgb(112, 109, 97);
-        public static readonly Color IconSurface = Color.FromArgb(253, 252, 248);
-        public static readonly Color IconBorder = Color.FromArgb(222, 199, 177);
-        public static readonly Color IconHover = Color.FromArgb(253, 252, 248);
-        public static readonly Color AccentInk = Color.FromArgb(240, 100, 36);
-        public static readonly Color AccentFill = Color.FromArgb(243, 178, 138);
+        public static readonly Color Background = Color.FromArgb(16, 31, 55);
+        public static readonly Color Surface = Color.FromArgb(16, 31, 55);
+        public static readonly Color Text = Color.FromArgb(255, 255, 255);
+        public static readonly Color Muted = Color.FromArgb(255, 255, 255);
+        public static readonly Color Card = Color.FromArgb(16, 31, 55);
+        public static readonly Color Selected = Color.FromArgb(16, 31, 55);
+        public static readonly Color Accent = Color.FromArgb(255, 255, 255);
+        public static readonly Color OnCard = Color.FromArgb(255, 255, 255);
+        public static readonly Color Border = Color.FromArgb(64, 87, 115);
+        public static readonly Color IconInk = Color.FromArgb(255, 255, 255);
+        public static readonly Color IconSurface = Color.FromArgb(16, 31, 55);
+        public static readonly Color IconBorder = Color.FromArgb(64, 87, 115);
+        public static readonly Color IconHover = Color.FromArgb(16, 31, 55);
+        public static readonly Color AccentInk = Color.FromArgb(255, 130, 31);
+        public static readonly Color AccentFill = Color.FromArgb(66, 48, 31);
         private static readonly PrivateFontCollection fonts = new PrivateFontCollection();
         private static readonly List<string> fontPaths = new List<string>();
         [DllImport("gdi32.dll", CharSet = CharSet.Unicode)] private static extern int AddFontResourceEx(string file, uint flags, IntPtr reserved);
         [DllImport("gdi32.dll", CharSet = CharSet.Unicode)] private static extern bool RemoveFontResourceEx(string file, uint flags, IntPtr reserved);
         public static void Initialize()
         {
-            foreach (var file in new[] { "SourceSans3-Regular.ttf", "SourceSans3-Semibold.ttf" }) {
+            foreach (var file in new[] { "Nunito.ttf" }) {
                 var path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Fonts", file);
                 if (File.Exists(path)) { AddFontResourceEx(path, 0x10, IntPtr.Zero); fonts.AddFontFile(path); fontPaths.Add(path); }
             }
@@ -44,13 +44,13 @@ namespace SWToolsHub.Portable
         public static Font CreateRegularFont()
         {
             foreach (var family in fonts.Families)
-                if (family.Name == "Source Sans 3" && family.IsStyleAvailable(FontStyle.Regular)) return new Font(family, 11f, FontStyle.Regular);
+                if (family.Name == "Nunito" && family.IsStyleAvailable(FontStyle.Regular)) return new Font(family, 11f, FontStyle.Regular);
             return new Font("Segoe UI", 11f, FontStyle.Regular);
         }
         public static Font CreateSemiBoldFont(float size = 14f)
         {
             foreach (var family in fonts.Families)
-                if (family.Name.IndexOf("Semibold", StringComparison.OrdinalIgnoreCase) >= 0) return new Font(family, size, FontStyle.Regular);
+                if (family.Name == "Nunito") return new Font(family, size, FontStyle.Regular);
             return new Font("Segoe UI Semibold", size, FontStyle.Regular);
         }
         public static void StyleAction(RoundedButton button, bool primary = false)

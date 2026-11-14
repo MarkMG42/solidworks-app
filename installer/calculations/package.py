@@ -6,6 +6,7 @@ here=Path(__file__).resolve().parent
 source=root/'installer/SW-Assistant-Portable.zip'
 target=here/'SW-Assistant-Calculations.zip'
 shutil.copy2(source,target)
+shutil.rmtree(here/'Portable',ignore_errors=True)
 with zipfile.ZipFile(target) as z:
     assert z.testzip() is None
     for entry in z.infolist():

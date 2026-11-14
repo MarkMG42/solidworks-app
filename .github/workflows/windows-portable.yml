@@ -41,6 +41,7 @@ jobs:
         shell: pwsh
         run: |
           $interop = Join-Path $env:GITHUB_WORKSPACE 'installer/calculations/Portable/SW-Assistant'
+          if (Test-Path (Join-Path $interop 'Runtime/SolidWorks.Interop.sldworks.dll')) { $interop = Join-Path $interop 'Runtime' }
           dotnet build addin/portable/SWToolsHub.Portable.csproj -c Release "-p:SolidWorksInteropPath=$interop"
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
       - name: Existing native calculation UI checks
@@ -65,6 +66,14 @@ jobs:
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           python installer/calculations/package.py
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          $app = Join-Path $env:GITHUB_WORKSPACE 'installer/calculations/Portable/SW-Assistant/SW-Assistant.exe'
+          $process = Start-Process -FilePath $app -WorkingDirectory (Split-Path $app) -PassThru
+          Start-Sleep -Seconds 3
+          $process.Refresh()
+          if ($process.HasExited) { throw "Packaged application exited before opening: $($process.ExitCode)" }
+          if ($process.MainWindowHandle -eq 0) { Stop-Process -Id $process.Id -Force; throw 'Packaged application did not open a native window' }
+          $process.CloseMainWindow() | Out-Null
+          if (!$process.WaitForExit(5000)) { Stop-Process -Id $process.Id -Force }
           $text = "Source: $env:GITHUB_SHA`nWindows runner: Windows Server 2022 x64`nNumerical, library and native WinForms checks: PASS`nZIP CRC, packaged EXE/DLL equality and SHA-256: PASS`nSolidWorks/VBA: not executed`n"
           Set-Content -Path installer/calculations/verification.txt -Value $text -Encoding utf8
       - uses: actions/upload-artifact@v4
