@@ -107,3 +107,15 @@ select.cell-input{padding:4px 6px}.table-scroll{border:0;border-radius:0}
  .viewer-expanded #xlsx-viewer{min-height:0}
  .viewer-expanded #main{min-height:0}
 }
+
+.nav-book{display:flex;gap:3px;align-items:center;min-width:0}
+nav .nav-book>button[data-id]{flex:1;min-width:0}
+nav .nav-book>.nav-book-delete{width:27px;min-width:27px;min-height:32px;padding:2px;justify-content:center;color:#ffb77d;font-size:20px}
+#viewer-bottom{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-shrink:0;flex-wrap:wrap}
+#viewer-bottom .sheet-bar{flex:1;min-width:180px;max-width:500px}
+#viewer-bottom .sheet-bar select{font-size:13px;min-height:30px;padding:5px 8px}
+#viewer-bottom .table-footer{padding:0;gap:12px}
+#viewer-delete-book{color:#ffb77d}
+#xlsx-viewer[aria-busy=true]{pointer-events:none;opacity:.65}
+.viewer-active .page-heading>div{min-width:0;flex:1}
+.viewer-active .page-heading h1{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}

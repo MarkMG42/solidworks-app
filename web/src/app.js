@@ -1,13 +1,16 @@
 import './style.css';
-import { setupViewer } from './xlsx-viewer.js';
+import { setupViewer,readSnapshot } from './xlsx-viewer.js';
+import {listBooks,getBook,saveBook,deleteBook} from './xlsx-library.js';
 const viewer = document.createElement('section'); viewer.id='xlsx-viewer'; viewer.hidden=true;
-document.getElementById('macros').before(viewer); setupViewer(viewer);
+document.getElementById('macros').before(viewer);
+const viewerAPI=setupViewer(viewer,{onFiles:addExcelFiles,onSave:saveBook,onDelete:removeExcelBook});
 import { Engine, address, CalculationError } from './engine.js';
 const $ = id => document.getElementById(id);
 const labels = ['Стенка трубы','Длина болта','Балка','Болты и швы','Высота узла'];
 const engines = new Map(), defaults = new Map(), sheets = new Map(), drafts = new Map();
 let activeId = 0, activeSheet = null, page = 0, requestId = 0, catalog = [];
-const customBooks = new Map();
+const customBooks = new Map(),nativeBooks=new Map();let lastNativeId=null;
+const isNative=id=>typeof id==='string'&&id.startsWith('xlsx-');
 const isCustom = id => typeof id === 'string' && id.startsWith('custom-');
 const PAGE_SIZE = 50, prefix = 'sw-assistant:web:';
 const version = import.meta.env.VITE_APP_VERSION || 'dev';
@@ -56,13 +59,21 @@ async function getEngine(id) {
 function selectedEngine() { return engines.get(activeId); }
 function rememberSheet() { if (activeSheet && activeId !== 'macros') sheets.set(activeId,activeSheet.Name); }
 async function navigate(id) {
-  viewer.hidden=id!=='viewer';$('main').classList.toggle('viewer-active',id==='viewer');
-  if(id!=='viewer'){document.querySelector('.app').classList.remove('viewer-expanded');$('viewer-expand').textContent='Развернуть';$('viewer-expand').setAttribute('aria-pressed','false');}
+  if(id==='viewer'&&nativeBooks.size)id=nativeBooks.has(lastNativeId)?lastNativeId:nativeBooks.keys().next().value;
+  const native=isNative(id);
+  viewer.hidden=id!=='viewer'&&!native;$('main').classList.toggle('viewer-active',id==='viewer'||native);
+  if(id!=='viewer'&&!native){document.querySelector('.app').classList.remove('viewer-expanded');$('viewer-expand').textContent='Развернуть';$('viewer-expand').setAttribute('aria-pressed','false');}
   rememberSheet(); announce(''); const token = ++requestId; activeId = id; $('loading').hidden=id==='macros';
   location.hash = id === 'macros' ? 'macros' : `calc-${id}`;
   for (const button of $('navigation').querySelectorAll('button')) { const selected = button.dataset.id === String(id); button.classList.toggle('active',selected); if (selected) button.setAttribute('aria-current','page'); else button.removeAttribute('aria-current'); }
   $('macros').hidden = id !== 'macros'; $('calculator').hidden = true; $('main').setAttribute('aria-busy',id !== 'macros');
-  if (id === 'viewer') { activeSheet=null; $('title').textContent='Просмотр XLSX'; $('loading').hidden=true; $('main').setAttribute('aria-busy','false'); return; }
+  if(native){
+    activeSheet=null;$('title').textContent=nativeBooks.get(id)?.title||'Таблица Excel';lastNativeId=id;
+    viewer.setAttribute('aria-busy','true');
+    try{const record=await getBook(id);if(!record)throw new Error('Таблица не найдена');await viewerAPI.openBook(record);if(token!==requestId)return;}catch(error){if(token===requestId)announce('Не удалось открыть таблицу: '+error.message,true);}
+    viewer.setAttribute('aria-busy','false');$('loading').hidden=true;$('main').setAttribute('aria-busy','false');return;
+  }
+  if (id === 'viewer') { activeSheet=null; $('title').textContent='Таблицы Excel'; $('loading').hidden=true; $('main').setAttribute('aria-busy','false'); return; }
   if (id === 'macros') { activeSheet = null; $('title').textContent = 'Макросы'; return; }
   $('title').textContent = labels[id];
   $('custom-actions').hidden = !isCustom(id);
@@ -228,14 +239,40 @@ $('original').addEventListener('click',async()=>{
 });
 function addNavigation(id,label){
   const button=element('button');button.type='button';button.dataset.id=id;
-  button.append(element('span','nav-icon',isCustom(id)?'◇':id==='macros'||id==='viewer'?'◇':String(id+1).padStart(2,'0')),element('span',null,label));button.addEventListener('click',()=>navigate(id));$('navigation').append(button);
+  button.append(element('span','nav-icon',isCustom(id)||isNative(id)?'◇':id==='macros'||id==='viewer'?'◇':String(id+1).padStart(2,'0')),element('span',null,label));button.addEventListener('click',()=>navigate(id));
+  if(isNative(id)){const row=element('div','nav-book');row.dataset.book=id;const remove=element('button','nav-book-delete','×');remove.type='button';remove.title='Удалить таблицу';remove.setAttribute('aria-label','Удалить таблицу '+label);remove.addEventListener('click',()=>removeExcelBook(id));row.append(button,remove);$('navigation').append(row);}else $('navigation').append(button);
 }
-for(const [id,label] of [['macros','Макросы'],['viewer','Просмотр XLSX'],...labels.map((v,i)=>[i,v])]){
+for(const [id,label] of [['macros','Макросы'],['viewer','Таблицы Excel'],...labels.map((v,i)=>[i,v])]){
   addNavigation(id,label);
 }
-function hashId(){const raw=location.hash.replace(/^#calc-/,'');return raw==='viewer'?'viewer':location.hash==='#macros'?'macros':customBooks.has(raw)?raw:/^[0-4]$/.test(raw)?Number(raw):0;}
+function hashId(){const raw=location.hash.replace(/^#calc-/,'');return raw==='viewer'?'viewer':location.hash==='#macros'?'macros':customBooks.has(raw)||nativeBooks.has(raw)?raw:/^[0-4]$/.test(raw)?Number(raw):0;}
 async function askName(value){const d=$('name-dialog');$('calculation-name').value=value;d.returnValue='';return new Promise(resolve=>{d.addEventListener('close',()=>resolve(d.returnValue==='ok'?$('calculation-name').value.trim():null),{once:true});d.showModal();$('calculation-name').focus();});}
-$('add-calculation').addEventListener('click',()=>$('custom-file').click());
+$('add-calculation').addEventListener('click',()=>viewerAPI.chooseFiles());
+async function addExcelFiles(files){
+ $('add-calculation').disabled=true;const added=[],errors=[];
+ try{
+  const {default:ExcelJS}=await import('exceljs');
+  for(const file of files){
+   announce(`Добавляю ${file.name}…`);
+   try{
+    if(!/\.xlsx$/i.test(file.name))throw new Error('Выберите файл .xlsx');
+    if(file.size>15*1024*1024)throw new Error('Максимальный размер Excel — 15 МБ');
+    const bytes=await file.arrayBuffer(),loaded=await readSnapshot(bytes,ExcelJS);
+    const baseTitle=file.name.replace(/\.xlsx$/i,'');let title=baseTitle;for(let n=2;[...nativeBooks.values()].some(book=>book.title===title);n++)title=baseTitle+' ('+n+')';
+    const record={id:'xlsx-'+crypto.randomUUID(),title,fileName:file.name,bytes,created:Date.now(),state:{}};
+    await saveBook(record);await viewerAPI.register(record,loaded);nativeBooks.set(record.id,{id:record.id,title:record.title,fileName:record.fileName,created:record.created});addNavigation(record.id,record.title);added.push(record.id);
+   }catch(error){errors.push(`${file.name}: ${error.message}`);}
+  }
+  if(added.length)await navigate(added[0]);
+  if(errors.length){const message='Не удалось добавить: '+errors.join('; ');announce(message,true);viewerAPI.showError('Файл не открыт: '+message);}
+  else announce('');
+ }finally{$('add-calculation').disabled=false;}
+}
+async function removeExcelBook(id){
+ const book=nativeBooks.get(id);if(!book)return;
+ if(!await confirm('Удалить таблицу?',`«${book.title}» будет удалена из этого браузера вместе с сохранённым вводом. Исходный файл на компьютере останется.`))return;
+ try{await deleteBook(id);nativeBooks.delete(id);viewerAPI.forget(id);$('navigation').querySelector(`[data-book="${id}"]`)?.remove();if(activeId===id)await navigate(nativeBooks.keys().next().value||0);}catch(error){announce('Не удалось удалить таблицу: '+error.message,true);}
+}
 $('custom-file').addEventListener('change',async event=>{
  const file=event.target.files[0];event.target.value='';if(!file)return;
  $('add-calculation').disabled=true;announce('Читаю Excel и проверяю все листы…');
@@ -257,5 +294,6 @@ window.addEventListener('hashchange',()=>{const id=hashId();if(id!==activeId)nav
 try{
   const r=await fetch(dataURL('catalog.json'));if(!r.ok)throw new Error('Не удалось загрузить расчёты. Нажмите «Обновить приложение».');catalog=await r.json();
   try { const db=await modelStore(); const models=await new Promise((resolve,reject)=>{const r=db.transaction('models').objectStore('models').getAll();r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);});for(const book of models)if(book.Custom && book.Id){customBooks.set(book.Id,book);labels[book.Id]=book.Title;addNavigation(book.Id,book.Title);} } catch { announce('Хранилище пользовательских расчётов недоступно.',true); }
+  try{const books=await listBooks();for(const book of books.sort((a,b)=>a.created-b.created)){nativeBooks.set(book.id,book);addNavigation(book.id,book.title);}}catch{announce('Хранилище Excel-таблиц недоступно.',true);}
   await navigate(hashId());
 }catch(error){$('loading').hidden=true;announce(error.message,true);$('main').setAttribute('aria-busy','false');}

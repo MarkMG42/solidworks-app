@@ -7,10 +7,11 @@ export async function readSnapshot(bytes, ExcelJS) {
   // ExcelJS normalizes cached empty strings to null; inspect XML presence separately.
   const [{default:JSZip},saxes,ssf] = await Promise.all([import('jszip'),import('saxes'),import('ssf')]);
   const SaxesParser=saxes.SaxesParser || saxes.default.SaxesParser;
-  const zip = await JSZip.loadAsync(bytes); const caches = new Map(),listRules=new Map();
+  const zip = await JSZip.loadAsync(bytes); const caches = new Map(),listRules=new Map(),worksheetXML=new Map();
   for (const [path,entry] of Object.entries(zip.files)) {
     if (!/^xl\/worksheets\/[^/]+\.xml$/.test(path)) continue;
     const xml = await entry.async('string');
+    worksheetXML.set(path,xml);
     if (xml.length > 32000000) throw new Error('Распакованный XML слишком большой');
     const parser = new SaxesParser(); let current=null, inValue=false;
     const values = new Map();
@@ -26,6 +27,7 @@ export async function readSnapshot(bytes, ExcelJS) {
   const bookParser=new SaxesParser();bookParser.on('opentag',n=>{if(n.name==='sheet')sheetPaths.set(n.attributes.name,relationships.get(n.attributes['r:id']));});
   bookParser.write(await zip.file('xl/workbook.xml').async('string')).close();
   const theme=readTheme(await zip.file('xl/theme/theme1.xml')?.async('string'),SaxesParser);
+  const conditional=book.worksheets.some(ws=>ws.conditionalFormattings?.length)?await import('./xlsx-conditional.js'):null;
   let count = 0;
   const sheets = book.worksheets.map(ws => {
     const cells = []; let rows = 1, columns = 1;
@@ -61,11 +63,11 @@ export async function readSnapshot(bytes, ExcelJS) {
     const rowHeights=Array.from({length:rows},(_,i)=>{
       const row=ws.findRow(i+1);return row?.hidden?0:(row?.height??ws.properties.defaultRowHeight??15)*4/3;
     });
-    return { name:ws.name, cells, rows, columns, merges, columnWidths, rowHeights, listRules:listRules.get(sheetPaths.get(ws.name))||[], showGridLines:ws.views?.[0]?.showGridLines!==false };
+    return { name:ws.name, cells, rows, columns, merges, columnWidths, rowHeights, conditional:conditional?.conditionalRules(ws,theme,worksheetXML.get(sheetPaths.get(ws.name))||'',SaxesParser)||[], listRules:listRules.get(sheetPaths.get(ws.name))||[], showGridLines:ws.views?.[0]?.showGridLines!==false };
   });
   if (!sheets.length) throw new Error('В файле нет листов');
   const listNames=readListNames(await zip.file('xl/workbook.xml').async('string'),SaxesParser);
-  Object.defineProperty(sheets,'source',{value:{bytes,zip,sheetPaths,book,listNames,date1904:!!book.properties.date1904,formatter:ssf.default||ssf}});
+  Object.defineProperty(sheets,'source',{value:{bytes,zip,sheetPaths,book,listNames,conditionalEvaluator:conditional?.conditionalEvaluator,date1904:!!book.properties.date1904,formatter:ssf.default||ssf}});
   return sheets;
 }
 function coordinates(address) {
@@ -84,12 +86,13 @@ function snapshotText(value) {
   }
   return String(value);
 }
-export function setupViewer(root) {
+export function setupViewer(root,hooks={}) {
   const el=(tag,text)=>{const node=document.createElement(tag);if(text!=null)node.textContent=text;return node;};
   let sheets=[],page=0,fileName='',session=null,selectedAddress='',selectedCell=null,applying=false;
-  const open=el('button','Открыть XLSX…'),file=el('input');file.type='file';file.accept='.xlsx';file.hidden=true;
-  const note=el('p','Выберите ячейку и измените значение ниже. Оформление Excel сохраняется. Поддерживаемые формулы пересчитываются после ввода, остальные явно помечаются. Файл остаётся в этой вкладке.');note.className='hint';
-  const status=el('p','Выберите файл .xlsx');status.setAttribute('role','status');
+  let currentRecord=null,loadToken=0;const cache=new Map(),saveTimers=new Map();
+  const file=el('input');file.type='file';file.accept='.xlsx';file.multiple=true;file.hidden=true;
+  const note=el('p','Выберите ячейку и измените значение ниже. Оформление Excel сохраняется. Поддерживаемые формулы пересчитываются после ввода, остальные явно помечаются. Книги и изменения сохраняются в этом браузере.');note.className='hint';
+  const status=el('p','Добавьте XLSX кнопкой «Добавить расчёт» слева');status.setAttribute('role','status');
   const bar=el('div');bar.className='sheet-bar';const label=el('label','Лист');label.htmlFor='viewer-sheet';
   const picker=el('select');picker.id='viewer-sheet';bar.append(label,picker);bar.hidden=true;
   const views=el('div');views.className='sheet-bar viewer-views';views.hidden=true;
@@ -124,8 +127,25 @@ export function setupViewer(root) {
     const expanded=app.classList.toggle('viewer-expanded');expand.textContent=expanded?'Свернуть':'Развернуть';expand.setAttribute('aria-pressed',String(expanded));
   };
   document.addEventListener('keydown',event=>{if(event.key==='Escape'&&app.classList.contains('viewer-expanded')&&!event.target.matches('input,select,textarea'))expand.click();});
-  toolbar.append(open,bar,views,status,help,expand);
-  root.append(toolbar,file,formulaBar,editBar,editStatus,scroll,controls);
+  const remove=el('button','Удалить таблицу');remove.id='viewer-delete-book';remove.type='button';remove.hidden=true;remove.onclick=()=>{if(currentRecord)hooks.onDelete?.(currentRecord.id);};
+  toolbar.append(views,status,help,expand,remove);
+  const bottom=el('div');bottom.id='viewer-bottom';bottom.append(bar,controls);
+  root.append(toolbar,file,formulaBar,editBar,editStatus,scroll,bottom);
+  function state(){return {edits:[...session.edits],history:session.history.map(item=>({...item})),sheet:picker.selectedIndex,page,mode:mode.value,selectedAddress};}
+  function remember(){if(currentRecord&&session)cache.set(currentRecord.id,{sheets,session,state:state()});}
+  function statsText(){return session?.dirty?`Изменений: ${session.edits.size}. Пересчитано формул: ${session.counts?.calculated||0}; не обновлено: ${session.counts?.unavailable||0}. `:'';}
+  function queueSave(){
+    if(!currentRecord||!hooks.onSave)return;
+    const record={...currentRecord,state:state()},editing=session,revision=session.revision;
+    remember();clearTimeout(saveTimers.get(record.id));
+    if(editing.dirty)setEditStatus(statsText()+'Сохраняю в браузере…');
+    saveTimers.set(record.id,setTimeout(async()=>{
+      saveTimers.delete(record.id);
+      try{await hooks.onSave(record);if(editing.revision===revision)editing.savedRevision=revision;
+        if(currentRecord?.id===record.id&&session===editing&&editing.revision===revision){currentRecord=record;if(editing.dirty)setEditStatus(statsText()+'Сохранено в этом браузере.');}
+      }catch(error){if(currentRecord?.id===record.id)setEditStatus('Автосохранение не удалось: '+error.message+'. Скачайте XLSX перед закрытием.');}
+    },150));
+  }
   function setEditStatus(text){editStatus.textContent=text;editStatus.hidden=!text;}
   function fillChoices(select,list,cell){
     const current=cell?.text||'',match=list.options.find(option=>option.text.toUpperCase()===current.toUpperCase());
@@ -155,7 +175,9 @@ export function setupViewer(root) {
     if(list?.reason)cacheStatus.textContent=list.reason;
   }
   function render(){
-    const sheet=(session?session.view():sheets)[picker.selectedIndex];if(!sheet)return;
+    const displayed=session?session.view():sheets,sheet=displayed[picker.selectedIndex];if(!sheet)return;
+    const names={};for(const item of sheets.source.book.definedNames.model)if(item.ranges.length===1)names[item.name]=item.ranges[0];
+    const conditional=sheets.source.conditionalEvaluator?.(displayed,names);
     table.replaceChildren();addressLabel.textContent='—';formulaInput.value='';cacheStatus.textContent='';
     const grid=mode.value==='sheet',listed=sheet.cells.filter(c=>!c.slave);
     table.classList.toggle('sheet-grid',grid);table.classList.toggle('without-gridlines',!sheet.showGridLines);
@@ -170,7 +192,7 @@ export function setupViewer(root) {
     }
     head.append(hr);const body=el('tbody');
     editBar.hidden=!grid;undo.disabled=!session?.history.length;
-    setEditStatus(session?.dirty?`Изменений: ${session.edits.size}. Пересчитано формул: ${session.counts?.calculated||0}; не обновлено: ${session.counts?.unavailable||0}. Скачайте XLSX, чтобы сохранить ввод.`:'');
+    setEditStatus(session?.dirty?statsText()+(currentRecord?(session.unsaved?'Сохраняю в браузере…':'Сохранено в этом браузере.'):'Скачайте XLSX, чтобы сохранить ввод.'):'');
     if(grid){
       const cols=el('colgroup'),gutter=el('col');gutter.style.width='42px';cols.append(gutter);
       for(const width of sheet.columnWidths){const col=el('col');col.style.width=width+'px';if(!width)col.style.display='none';cols.append(col);}
@@ -207,6 +229,7 @@ export function setupViewer(root) {
             else value.textContent=c.display;
             td.append(value);td.title=[td.dataset.address,c.text,c.formula].filter(Boolean).join(' · ');
           }
+          if(conditional)Object.assign(td.style,conditional(sheet,td.dataset.address));
           td.addEventListener('click',()=>selectCell(td,c));td.addEventListener('focus',()=>selectCell(td,c));
           td.addEventListener('dblclick',()=>{selectCell(td,c);if(!editInput.disabled){if(!editChoice.hidden)inlineChoice.focus();else{editInput.focus();editInput.select();}}});
           td.addEventListener('keydown',event=>{if(event.target!==td)return;if(['Enter','F2'].includes(event.key)&&!editInput.disabled){event.preventDefault();if(!editChoice.hidden)inlineChoice.focus();else{editInput.focus();editInput.select();}}});
@@ -239,14 +262,14 @@ export function setupViewer(root) {
     applying=true;apply.disabled=true;
     try{
       await editing.prepare();if(session!==editing)return;
-      editing.apply(sheetName,address,text);refresh();
+      editing.apply(sheetName,address,text);refresh();queueSave();
     }catch(error){setEditStatus(error.message);}
     finally{applying=false;apply.disabled=editInput.disabled;editChoice.disabled=editInput.disabled;inlineChoice.disabled=editInput.disabled;}
   };
   editChoice.onchange=()=>{inlineChoice.value=editChoice.value;editBar.requestSubmit();};
   inlineChoice.onchange=()=>{editChoice.value=inlineChoice.value;editBar.requestSubmit();};
   editInput.onkeydown=event=>{if(event.key==='Escape'){editInput.value=session.editText(selectedCell);editInput.blur();}};
-  undo.onclick=()=>{if(session?.undo())refresh();};
+  undo.onclick=()=>{if(session?.undo()){refresh();queueSave();}};
   download.onclick=async()=>{
     if(!session)return;download.disabled=true;
     try{
@@ -257,19 +280,41 @@ export function setupViewer(root) {
       setEditStatus(exporting.dirty?'XLSX скачан. Excel пересчитает формулы при открытии; старый кэш результатов в копии удалён.':'XLSX скачан без изменений.');
     }catch(error){setEditStatus('Не удалось сохранить XLSX: '+error.message);}finally{download.disabled=false;}
   };
-  mode.onchange=()=>{page=0;render();};open.onclick=()=>file.click();picker.onchange=()=>{page=0;selectedAddress='';render();};
-  previous.onclick=()=>{page--;render();};next.onclick=()=>{page++;render();};
-  window.addEventListener('beforeunload',event=>{if(session?.unsaved){event.preventDefault();event.returnValue='';}});
+  mode.onchange=()=>{page=0;render();queueSave();};picker.onchange=()=>{page=0;selectedAddress='';render();queueSave();};
+  previous.onclick=()=>{page--;render();queueSave();};next.onclick=()=>{page++;render();queueSave();};
+  window.addEventListener('beforeunload',event=>{if(session?.unsaved||[...cache.values()].some(entry=>entry.session.unsaved)){event.preventDefault();event.returnValue='';}});
   file.onchange=async()=>{
-    const selected=file.files[0];file.value='';if(!selected)return;open.disabled=true;
+    const files=[...file.files],selected=files[0];file.value='';if(!selected)return;
+    if(hooks.onFiles){await hooks.onFiles(files);return;}file.disabled=true;
     try{
       if(!/\.xlsx$/i.test(selected.name))throw new Error('Выберите файл .xlsx');
       if(selected.size>15*1024*1024)throw new Error('Максимальный размер Excel — 15 МБ');
       if(session?.unsaved&&!window.confirm('Открыть другой файл? Нескачанные изменения текущей книги будут потеряны.'))return;
       const [{default:ExcelJS},{EditSession}]=await Promise.all([import('exceljs'),import('./xlsx-editor.js')]);const loaded=await readSnapshot(await selected.arrayBuffer(),ExcelJS);
       sheets=loaded;session=new EditSession(sheets);selectedAddress='';fileName=selected.name;picker.replaceChildren(...sheets.map(s=>el('option',s.name)));page=0;render();
-    }catch(error){status.textContent='Файл не открыт: '+error.message;}finally{open.disabled=false;}
+    }catch(error){status.textContent='Файл не открыт: '+error.message;}finally{file.disabled=false;}
   };
+  async function register(record,loaded){const {EditSession}=await import('./xlsx-editor.js');cache.set(record.id,{sheets:loaded,session:new EditSession(loaded),state:record.state||{}});}
+  async function openBook(record){
+    remember();const token=++loadToken;
+    let entry=cache.get(record.id);
+    if(!entry){
+      const [{default:ExcelJS},{EditSession}]=await Promise.all([import('exceljs'),import('./xlsx-editor.js')]);
+      const loaded=await readSnapshot(record.bytes,ExcelJS),editing=new EditSession(loaded),saved=record.state||{};
+      editing.edits=new Map(saved.edits||[]);editing.history=saved.history||[];editing.revision=editing.edits.size?1:0;editing.savedRevision=editing.revision;
+      if(editing.dirty)await editing.prepare();entry={sheets:loaded,session:editing,state:saved};cache.set(record.id,entry);
+    }
+    if(token!==loadToken)return;
+    currentRecord=record;sheets=entry.sheets;session=entry.session;fileName=record.fileName;
+    picker.replaceChildren(...sheets.map(s=>el('option',s.name)));picker.selectedIndex=Math.min(entry.state.sheet||0,sheets.length-1);
+    page=entry.state.page||0;mode.value=entry.state.mode||'sheet';selectedAddress=entry.state.selectedAddress||'';remove.hidden=false;render();root.dataset.book=record.id;
+  }
+  return {
+    chooseFiles:()=>file.click(),register,openBook,
+    showError:message=>{status.textContent=message;status.title=message;},
+    forget:id=>{clearTimeout(saveTimers.get(id));saveTimers.delete(id);cache.delete(id);if(currentRecord?.id===id){loadToken++;currentRecord=null;session=null;sheets=[];delete root.dataset.book;table.replaceChildren();bar.hidden=true;controls.hidden=true;views.hidden=true;formulaBar.hidden=true;editBar.hidden=true;remove.hidden=true;setEditStatus('');status.textContent='Добавьте XLSX кнопкой «Добавить расчёт» слева';}}
+  };
+
 }
 
 function columnName(column) {
