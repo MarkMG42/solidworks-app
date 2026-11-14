@@ -35,7 +35,7 @@ with sync_playwright() as p:
  assert page.locator('#viewer-table td[data-address="C3"]').inner_text()=='Исходное место'
  page.locator('#viewer-sheet').select_option(label='Данные')
  page.screenshot(path=str(root/'web/test-results/xlsx-viewer.png'),full_page=True)
- page.locator('#viewer-sheet').select_option(label='Пустой');assert page.locator('#viewer-table tbody tr').count()==0
+ page.locator('#viewer-sheet').select_option(label='Пустой');assert page.locator('#viewer-table tbody tr').count()==1
  page.locator('#navigation button[data-id="0"]').click();page.locator('#calculator').wait_for(state='visible')
  page.locator('#navigation button[data-id="viewer"]').click();page.locator('#viewer-sheet').select_option(label='Данные')
  for width in [900,640,390]:

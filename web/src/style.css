@@ -63,3 +63,10 @@ select.cell-input{padding:4px 6px}.table-scroll{border:0;border-radius:0}
 #viewer-formula{min-width:0;flex:1;border:0;background:#fff;color:#222;font:13px Arial,sans-serif}
 #viewer-cache-status{color:#a33b12;font:12px Arial,sans-serif}
 @media(max-width:600px){#viewer-formula-bar{flex-wrap:wrap}#viewer-cache-status{flex-basis:100%}}
+
+#viewer-edit-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;flex-shrink:0}
+#viewer-edit-bar label{font-size:13px}
+#viewer-edit-value{flex:1;min-width:140px;border:1px solid var(--border);background:#fff;color:#222;padding:7px 9px;border-radius:3px}
+#viewer-edit-value:disabled{background:#dce1e6;color:#555}
+#viewer-edit-status{font-size:12px;margin:0;flex-shrink:0}
+#viewer-table.sheet-grid .edited-cell{box-shadow:inset 3px 0 #217346}

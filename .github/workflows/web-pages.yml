@@ -61,6 +61,7 @@ jobs:
           python web/tests/design_browser.py --url http://127.0.0.1:4173/solidworks-app/
           python web/tests/viewer_browser.py --url http://127.0.0.1:4173/solidworks-app/
           python web/tests/viewer_style_browser.py --url http://127.0.0.1:4173/solidworks-app/
+          python web/tests/viewer_edit_browser.py --url http://127.0.0.1:4173/solidworks-app/
       - uses: actions/upload-artifact@v4
         if: always()
         with:
