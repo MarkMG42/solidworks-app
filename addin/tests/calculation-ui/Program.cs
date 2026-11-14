@@ -67,14 +67,15 @@ internal static class UiChecks
                     picker.SelectedIndex = 0; Pump(window);
                     Check(ActiveGrid(view) == first, "Switching sheets retains original table");
                     if (book.Source.Contains("высоты")) {
-                        first.CellValidating += (sender, e) => Console.WriteLine("VALIDATE " + e.RowIndex + ":" + e.ColumnIndex + " value=" + e.FormattedValue);
-                        first.CellEndEdit += (sender, e) => Console.WriteLine("END EDIT " + e.RowIndex + ":" + e.ColumnIndex + " input=" + first[1, 2].Value + " result=" + first[1, 10].Value);
-                        first.CurrentCell = first[1, 2]; Check(first.BeginEdit(true), "Height input starts editing");
+                        first.CurrentCell = first[1, 2]; first.Focus(); Check(first.BeginEdit(true), "Height input starts editing");
                         ((TextBox)first.EditingControl).Text = "3000,5";
+                        // Programmatic Text assignment is not a keyboard edit. Tell
+                        // DataGridView that this harness changed its editing control.
+                        ((IDataGridViewEditingControl)first.EditingControl).EditingControlValueChanged = true;
+                        first.NotifyCurrentCellDirty(true);
+                        Check(first.IsCurrentCellDirty, "Harness input is marked changed");
                         window.ClientSize = new Size(800, 600); Pump(window);
                         Check(first.EndEdit(), "Input commits after resize"); Pump(window);
-                        var nativeEngine = (CalculationEngine)typeof(CalculationView).GetField("engine", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).GetValue(view);
-                        Console.WriteLine("ENGINE B3=" + nativeEngine.Get("Высота узла", "B3") + "; B11=" + nativeEngine.Get("Высота узла", "B11") + "; GRID=" + first[1, 10].Value);
                         Check(Convert.ToString(first[1, 10].Value) == "2496,5", "Resizing preserves input and recalculation: input=" + Convert.ToString(first[1, 2].Value) + "; result=" + Convert.ToString(first[1, 10].Value) + "; error=" + first[1, 2].ErrorText);
                         picker.SelectedIndex = 1; Pump(window); picker.SelectedIndex = 0; Pump(window);
                         Check(Convert.ToString(first[1, 10].Value) == "2496,5", "Switching sheets preserves edited values");
