@@ -70,3 +70,40 @@ select.cell-input{padding:4px 6px}.table-scroll{border:0;border-radius:0}
 #viewer-edit-value:disabled{background:#dce1e6;color:#555}
 #viewer-edit-status{font-size:12px;margin:0;flex-shrink:0}
 #viewer-table.sheet-grid .edited-cell{box-shadow:inset 3px 0 #217346}
+
+/* Compact workbook tools leave the window to the worksheet. */
+#main.viewer-active{padding:12px 16px 6px}
+.viewer-active .page-heading{margin-bottom:8px;min-height:32px}
+.viewer-active .page-heading h1{font-size:22px}
+.viewer-active .eyebrow{display:none}
+.viewer-active .app-footer{margin-top:5px;min-height:18px}
+#xlsx-viewer{gap:6px}
+#viewer-toolbar{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px;flex-shrink:0;min-width:0}
+#viewer-toolbar .sheet-bar{flex:0 1 300px;gap:6px}
+#viewer-toolbar .viewer-views{flex-basis:215px}
+#viewer-toolbar button,#viewer-toolbar select,#viewer-edit-bar button{min-height:30px;padding:5px 9px;font-size:13px}
+#viewer-toolbar p[role=status]{flex:1 1 100px;min-width:0;max-width:450px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px;margin:0}
+#viewer-toolbar select{max-width:none;font-size:13px}
+.viewer-help{position:relative;font-size:12px;flex-shrink:0}
+.viewer-help summary{cursor:pointer}
+.viewer-help[open] .hint{position:absolute;right:0;top:18px;width:min(360px,80vw);z-index:10;padding:12px;background:#101f37;border:1px solid var(--border);border-radius:5px;margin:0;box-shadow:0 3px 12px #0005}
+#viewer-formula-bar{min-height:29px;padding:3px 7px}
+#viewer-edit-bar{gap:6px}
+#viewer-edit-value,#viewer-edit-choice{padding:5px 8px;min-height:30px}
+#viewer-edit-choice{flex:1;min-width:140px;background:#fff;color:#222;border:1px solid var(--border);border-radius:3px;color-scheme:light}
+#xlsx-viewer .table-scroll{flex:1;min-height:220px;max-height:none;position:relative}
+#viewer-table.sheet-grid .has-excel-list{position:relative}
+#viewer-table .excel-list-choice{position:absolute;inset:0;width:100%;height:100%;min-height:0;padding:0 2px;border:0;border-radius:0;background:inherit;color:inherit;font:inherit;cursor:pointer;color-scheme:light;outline-offset:-2px}
+#viewer-table .excel-list-choice option{background:#fff;color:#222}
+.viewer-expanded{position:fixed;inset:0;z-index:20;display:block;background:#101f37}
+.viewer-expanded>.sidebar{display:none}
+.viewer-expanded>#main{height:100dvh;width:100%;padding:8px 10px 4px}
+@media(max-width:600px){
+ #main.viewer-active{min-height:75dvh}
+ #xlsx-viewer{min-height:70dvh}
+ #viewer-toolbar .sheet-bar{flex:1 1 210px}
+ #viewer-toolbar .viewer-views{flex-basis:200px}
+ #viewer-toolbar p[role=status]{max-width:none;flex-basis:140px}
+ .viewer-expanded #xlsx-viewer{min-height:0}
+ .viewer-expanded #main{min-height:0}
+}

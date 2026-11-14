@@ -1,5 +1,6 @@
 import { SaxesParser } from 'saxes';
 import { formattedValue } from './xlsx-style.js';
+import { resolveList } from './xlsx-validation.js';
 
 const escapeXML=value=>String(value).replace(/[<>&"']/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&apos;'}[c]));
 const local=name=>name.split(':').pop();
@@ -103,6 +104,7 @@ export class EditSession {
   get dirty(){return this.edits.size>0;}
   get unsaved(){return this.dirty&&this.savedRevision!==this.revision;}
   key(sheet,address){return JSON.stringify([sheet,address]);}
+  list(sheet,address){return resolveList(this,sheet,address);}
   apply(sheetName,address,text){
     const sheet=this.sheets.find(s=>s.name===sheetName);if(!sheet||!/^[A-Z]+[1-9]\d*$/.test(address))throw new Error('Ячейка не найдена');
     const row=Number(address.match(/\d+$/)[0]),column=[...address.replace(/\d+$/,'')].reduce((n,c)=>n*26+c.charCodeAt(0)-64,0);
@@ -110,7 +112,20 @@ export class EditSession {
     const cell=sheet.cells.find(c=>c.address===address);
     if(cell?.formula||cell?.slave||cell?.locked)throw new Error('Ячейка доступна только для чтения');
     if(!cell&&this.source.book.getWorksheet(sheetName).sheetProtection?.sheet)throw new Error('Лист защищён от редактирования');
-    const value=parseEdit(text,cell,this.source.date1904),key=this.key(sheetName,address);
+    const list=this.list(sheetName,address);
+    let value;
+    if(list?.options){
+      const match=list.options.find(option=>option.text.toUpperCase()===text.toUpperCase());
+      if(match){
+        value=match.value;
+        if(match.literal&&['number','boolean','date'].includes(cell?.kind)){
+          try{value=parseEdit(match.text,cell,this.source.date1904);}catch{/* A mixed literal list may intentionally contain text. */}
+        }
+      }
+      else if(!text.trim()&&list.allowBlank)value=null;
+      else throw new Error('Выберите значение из выпадающего списка');
+    }else value=parseEdit(text,cell,this.source.date1904);
+    const key=this.key(sheetName,address);
     const before=this.edits.has(key)?this.edits.get(key):undefined;
     const original=cell?.value??null;if(Object.is(before===undefined?original:before,value))return false;
     this.history.push({key,before});if(Object.is(original,value))this.edits.delete(key);else this.edits.set(key,value);

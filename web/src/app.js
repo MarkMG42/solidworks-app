@@ -56,7 +56,8 @@ async function getEngine(id) {
 function selectedEngine() { return engines.get(activeId); }
 function rememberSheet() { if (activeSheet && activeId !== 'macros') sheets.set(activeId,activeSheet.Name); }
 async function navigate(id) {
-  viewer.hidden=id!=='viewer';
+  viewer.hidden=id!=='viewer';$('main').classList.toggle('viewer-active',id==='viewer');
+  if(id!=='viewer'){document.querySelector('.app').classList.remove('viewer-expanded');$('viewer-expand').textContent='Развернуть';$('viewer-expand').setAttribute('aria-pressed','false');}
   rememberSheet(); announce(''); const token = ++requestId; activeId = id; $('loading').hidden=id==='macros';
   location.hash = id === 'macros' ? 'macros' : `calc-${id}`;
   for (const button of $('navigation').querySelectorAll('button')) { const selected = button.dataset.id === String(id); button.classList.toggle('active',selected); if (selected) button.setAttribute('aria-current','page'); else button.removeAttribute('aria-current'); }

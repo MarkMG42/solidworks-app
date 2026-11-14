@@ -1,12 +1,13 @@
 // The snapshot reader preserves Excel presentation and saved values independently of calculation.
 import { readTheme, cellStyle, fontStyle, columnPixels, formattedValue } from './xlsx-style.js';
+import { readListRules, readListNames } from './xlsx-validation.js';
 export async function readSnapshot(bytes, ExcelJS) {
   if (bytes.byteLength > 15 * 1024 * 1024) throw new Error('Максимальный размер Excel — 15 МБ');
   const book = new ExcelJS.Workbook(); await book.xlsx.load(bytes);
   // ExcelJS normalizes cached empty strings to null; inspect XML presence separately.
   const [{default:JSZip},saxes,ssf] = await Promise.all([import('jszip'),import('saxes'),import('ssf')]);
   const SaxesParser=saxes.SaxesParser || saxes.default.SaxesParser;
-  const zip = await JSZip.loadAsync(bytes); const caches = new Map();
+  const zip = await JSZip.loadAsync(bytes); const caches = new Map(),listRules=new Map();
   for (const [path,entry] of Object.entries(zip.files)) {
     if (!/^xl\/worksheets\/[^/]+\.xml$/.test(path)) continue;
     const xml = await entry.async('string');
@@ -17,6 +18,7 @@ export async function readSnapshot(bytes, ExcelJS) {
     parser.on('text',text=>{if(current&&inValue)current.text+=text;});
     parser.on('closetag',node=>{const name=typeof node==='string'?node:node.name;if(name==='v')inValue=false;if(name==='c'&&current){values.set(current.address,current);current=null;}});
     parser.write(xml).close();caches.set(path,values);
+    listRules.set(path,readListRules(xml,SaxesParser));
   }
   const relationships=new Map(), sheetPaths=new Map();
   const relParser=new SaxesParser();relParser.on('opentag',n=>{if(n.name==='Relationship' && n.attributes.TargetMode!=='External')relationships.set(n.attributes.Id,new URL(n.attributes.Target,'https://xlsx.local/xl/workbook.xml').pathname.slice(1));});
@@ -59,10 +61,11 @@ export async function readSnapshot(bytes, ExcelJS) {
     const rowHeights=Array.from({length:rows},(_,i)=>{
       const row=ws.findRow(i+1);return row?.hidden?0:(row?.height??ws.properties.defaultRowHeight??15)*4/3;
     });
-    return { name:ws.name, cells, rows, columns, merges, columnWidths, rowHeights, showGridLines:ws.views?.[0]?.showGridLines!==false };
+    return { name:ws.name, cells, rows, columns, merges, columnWidths, rowHeights, listRules:listRules.get(sheetPaths.get(ws.name))||[], showGridLines:ws.views?.[0]?.showGridLines!==false };
   });
   if (!sheets.length) throw new Error('В файле нет листов');
-  Object.defineProperty(sheets,'source',{value:{bytes,zip,sheetPaths,book,date1904:!!book.properties.date1904,formatter:ssf.default||ssf}});
+  const listNames=readListNames(await zip.file('xl/workbook.xml').async('string'),SaxesParser);
+  Object.defineProperty(sheets,'source',{value:{bytes,zip,sheetPaths,book,listNames,date1904:!!book.properties.date1904,formatter:ssf.default||ssf}});
   return sheets;
 }
 function coordinates(address) {
@@ -106,15 +109,34 @@ export function setupViewer(root) {
   previous.setAttribute('aria-label','Предыдущая страница');next.setAttribute('aria-label','Следующая страница');controls.append(previous,info,next);
   const editBar=el('form');editBar.id='viewer-edit-bar';editBar.hidden=true;
   const editLabel=el('label','Значение');editLabel.htmlFor='viewer-edit-value';
+  const editChoice=el('select');editChoice.id='viewer-edit-choice';editChoice.setAttribute('aria-label','Выбор значения ячейки');editChoice.hidden=true;
+  const inlineChoice=el('select');inlineChoice.className='excel-list-choice';inlineChoice.setAttribute('aria-label','Выпадающий список ячейки');inlineChoice.onclick=event=>event.stopPropagation();
   const editInput=el('input');editInput.id='viewer-edit-value';editInput.autocomplete='off';editInput.setAttribute('aria-label','Новое значение ячейки');
   const apply=el('button','Применить');apply.type='submit';
   const undo=el('button','Отменить изменение');undo.type='button';undo.disabled=true;
   const download=el('button','Скачать XLSX');download.type='button';
-  editBar.append(editLabel,editInput,apply,undo,download);
+  editBar.append(editLabel,editInput,editChoice,apply,undo,download);
   const editStatus=el('p');editStatus.id='viewer-edit-status';editStatus.setAttribute('role','status');editStatus.hidden=true;
-  root.append(open,file,note,status,bar,views,formulaBar,editBar,editStatus,scroll,controls);
+  const toolbar=el('div');toolbar.id='viewer-toolbar';
+  const help=el('details'),summary=el('summary','Справка');help.className='viewer-help';help.append(summary,note);
+  const expand=el('button','Развернуть');expand.id='viewer-expand';expand.type='button';expand.setAttribute('aria-pressed','false');
+  const app=root.closest('.app');expand.onclick=()=>{
+    const expanded=app.classList.toggle('viewer-expanded');expand.textContent=expanded?'Свернуть':'Развернуть';expand.setAttribute('aria-pressed',String(expanded));
+  };
+  document.addEventListener('keydown',event=>{if(event.key==='Escape'&&app.classList.contains('viewer-expanded')&&!event.target.matches('input,select,textarea'))expand.click();});
+  toolbar.append(open,bar,views,status,help,expand);
+  root.append(toolbar,file,formulaBar,editBar,editStatus,scroll,controls);
+  function setEditStatus(text){editStatus.textContent=text;editStatus.hidden=!text;}
+  function fillChoices(select,list,cell){
+    const current=cell?.text||'',match=list.options.find(option=>option.text.toUpperCase()===current.toUpperCase());
+    select.replaceChildren();
+    if(!list.options.some(option=>option.text==='')){const blank=el('option','Выберите…');blank.value='';blank.disabled=!list.allowBlank;select.append(blank);}
+    if(current&&!match){const previous=el('option',current+' (текущее)');previous.value=current;previous.disabled=true;select.append(previous);}
+    for(const item of list.options){const option=el('option',item.text);option.value=item.text;select.append(option);}
+    select.value=match?.text??current;
+  }
   function selectCell(td,cell){
-    const old=table.querySelector('.selected-cell');if(old){old.classList.remove('selected-cell');old.tabIndex=-1;}
+    const old=table.querySelector('.selected-cell');if(old){old.classList.remove('selected-cell','has-excel-list');old.tabIndex=-1;}inlineChoice.remove();
     td.classList.add('selected-cell');td.tabIndex=0;
     addressLabel.textContent=td.dataset.address;
     formulaInput.value=cell?.formula||cell?.text||'';
@@ -126,6 +148,11 @@ export function setupViewer(root) {
     editInput.disabled=blocked;apply.disabled=blocked||applying;
     editInput.value=blocked?'':session?.editText(cell)||'';
     editInput.placeholder=cell?.formula?'Формула — только чтение':blocked?'Ячейка защищена':'Введите значение';
+    const list=blocked?null:session?.list(sheets[picker.selectedIndex].name,selectedAddress);
+    const hasList=!!list?.options?.length;editChoice.hidden=!hasList;editInput.hidden=hasList;editLabel.htmlFor=hasList?'viewer-edit-choice':'viewer-edit-value';
+    editChoice.disabled=blocked||applying;inlineChoice.disabled=blocked||applying;
+    if(hasList){fillChoices(editChoice,list,cell);fillChoices(inlineChoice,list,cell);td.classList.add('has-excel-list');td.append(inlineChoice);}
+    if(list?.reason)cacheStatus.textContent=list.reason;
   }
   function render(){
     const sheet=(session?session.view():sheets)[picker.selectedIndex];if(!sheet)return;
@@ -142,8 +169,8 @@ export function setupViewer(root) {
       hr.append(th);
     }
     head.append(hr);const body=el('tbody');
-    editBar.hidden=!grid;editStatus.hidden=false;undo.disabled=!session?.history.length;
-    editStatus.textContent=session?.dirty?`Изменений: ${session.edits.size}. Пересчитано формул: ${session.counts?.calculated||0}; не обновлено: ${session.counts?.unavailable||0}. Скачайте XLSX, чтобы сохранить ввод.`:'Изменения хранятся в этой вкладке. Для сохранения скачайте XLSX.';
+    editBar.hidden=!grid;undo.disabled=!session?.history.length;
+    setEditStatus(session?.dirty?`Изменений: ${session.edits.size}. Пересчитано формул: ${session.counts?.calculated||0}; не обновлено: ${session.counts?.unavailable||0}. Скачайте XLSX, чтобы сохранить ввод.`:'');
     if(grid){
       const cols=el('colgroup'),gutter=el('col');gutter.style.width='42px';cols.append(gutter);
       for(const width of sheet.columnWidths){const col=el('col');col.style.width=width+'px';if(!width)col.style.display='none';cols.append(col);}
@@ -181,8 +208,8 @@ export function setupViewer(root) {
             td.append(value);td.title=[td.dataset.address,c.text,c.formula].filter(Boolean).join(' · ');
           }
           td.addEventListener('click',()=>selectCell(td,c));td.addEventListener('focus',()=>selectCell(td,c));
-          td.addEventListener('dblclick',()=>{selectCell(td,c);if(!editInput.disabled){editInput.focus();editInput.select();}});
-          td.addEventListener('keydown',event=>{if(['Enter','F2'].includes(event.key)&&!editInput.disabled){event.preventDefault();editInput.focus();editInput.select();}});
+          td.addEventListener('dblclick',()=>{selectCell(td,c);if(!editInput.disabled){if(!editChoice.hidden)inlineChoice.focus();else{editInput.focus();editInput.select();}}});
+          td.addEventListener('keydown',event=>{if(event.target!==td)return;if(['Enter','F2'].includes(event.key)&&!editInput.disabled){event.preventDefault();if(!editChoice.hidden)inlineChoice.focus();else{editInput.focus();editInput.select();}}});
           row.append(td);
         }
         body.append(row);
@@ -196,7 +223,7 @@ export function setupViewer(root) {
     }
     table.append(head,body);
     const total=grid?sheet.rows:listed.length;
-    status.textContent=(sheet.cells.length?'Файл: ':'Пустой лист · ')+fileName;
+    status.textContent=(sheet.cells.length?'':'Пустой лист · ')+fileName;status.title=fileName;
     bar.hidden=false;views.hidden=false;controls.hidden=total<=50;
     previous.disabled=page===0;next.disabled=(page+1)*50>=total;
     info.textContent=`${page+1} / ${Math.max(1,Math.ceil(total/50))}`;
@@ -208,14 +235,16 @@ export function setupViewer(root) {
   function refresh(){const top=scroll.scrollTop,left=scroll.scrollLeft;render();scroll.scrollTop=top;scroll.scrollLeft=left;}
   editBar.onsubmit=async event=>{
     event.preventDefault();if(!session||apply.disabled||applying)return;
-    const editing=session,sheetName=sheets[picker.selectedIndex].name,address=selectedAddress,text=editInput.value;
+    const editing=session,sheetName=sheets[picker.selectedIndex].name,address=selectedAddress,text=editChoice.hidden?editInput.value:editChoice.value;
     applying=true;apply.disabled=true;
     try{
       await editing.prepare();if(session!==editing)return;
       editing.apply(sheetName,address,text);refresh();
-    }catch(error){editStatus.textContent=error.message;}
-    finally{applying=false;apply.disabled=editInput.disabled;}
+    }catch(error){setEditStatus(error.message);}
+    finally{applying=false;apply.disabled=editInput.disabled;editChoice.disabled=editInput.disabled;inlineChoice.disabled=editInput.disabled;}
   };
+  editChoice.onchange=()=>{inlineChoice.value=editChoice.value;editBar.requestSubmit();};
+  inlineChoice.onchange=()=>{editChoice.value=inlineChoice.value;editBar.requestSubmit();};
   editInput.onkeydown=event=>{if(event.key==='Escape'){editInput.value=session.editText(selectedCell);editInput.blur();}};
   undo.onclick=()=>{if(session?.undo())refresh();};
   download.onclick=async()=>{
@@ -225,8 +254,8 @@ export function setupViewer(root) {
       const bytes=await exporting.export(),blob=new Blob([bytes],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
       const url=URL.createObjectURL(blob),link=el('a');link.href=url;link.download=fileName.replace(/\.xlsx$/i,'')+'-изменено.xlsx';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
       if(session===exporting&&exporting.revision===revision)exporting.savedRevision=revision;
-      editStatus.textContent=exporting.dirty?'XLSX скачан. Excel пересчитает формулы при открытии; старый кэш результатов в копии удалён.':'XLSX скачан без изменений.';
-    }catch(error){editStatus.textContent='Не удалось сохранить XLSX: '+error.message;}finally{download.disabled=false;}
+      setEditStatus(exporting.dirty?'XLSX скачан. Excel пересчитает формулы при открытии; старый кэш результатов в копии удалён.':'XLSX скачан без изменений.');
+    }catch(error){setEditStatus('Не удалось сохранить XLSX: '+error.message);}finally{download.disabled=false;}
   };
   mode.onchange=()=>{page=0;render();};open.onclick=()=>file.click();picker.onchange=()=>{page=0;selectedAddress='';render();};
   previous.onclick=()=>{page--;render();};next.onclick=()=>{page++;render();};
