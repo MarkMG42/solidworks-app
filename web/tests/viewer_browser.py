@@ -11,7 +11,10 @@ with sync_playwright() as p:
  page=browser.new_page(viewport={'width':1440,'height':1000});errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
  page.goto(args.url+'#calc-viewer');page.locator('#xlsx-viewer').wait_for(state='visible')
  page.locator('#xlsx-viewer input[type=file]').set_input_files(str(fixture))
- page.locator('#viewer-table').get_by_text('=UNSUPPORTED(1)',exact=True).wait_for()
+ page.locator('#viewer-table td[data-address="A1"]').wait_for()
+ assert page.locator('#viewer-formula').input_value()=='=UNSUPPORTED(1)'
+ page.locator('#viewer-table td[data-address="A4"]').click()
+ assert page.locator('#viewer-cache-status').inner_text()=='Нет сохранённого результата'
  assert page.locator('#viewer-table tr').filter(has_text='Нет сохранённого результата').count()==1
  assert page.locator('#viewer-table').get_by_text('0',exact=True).count()==1
  assert page.locator('#viewer-table').get_by_text('false',exact=True).count()==1
@@ -23,7 +26,9 @@ with sync_playwright() as p:
  assert page.locator('#viewer-table td[data-address="A1"]').inner_text()==''
  assert page.locator('#viewer-table thead th').last.inner_text()=='AA'
  page.get_by_role('button',name='Следующая страница',exact=True).click()
- assert page.locator('#viewer-table td[data-address="AA55"]').inner_text()=='17\n=UNKNOWN()'
+ assert page.locator('#viewer-table td[data-address="AA55"]').inner_text()=='17'
+ page.locator('#viewer-table td[data-address="AA55"]').click()
+ assert page.locator('#viewer-formula').input_value()=='=UNKNOWN()'
  page.locator('#viewer-mode').select_option('list')
  assert page.locator('#viewer-table tbody tr').count()==2
  page.locator('#viewer-mode').select_option('sheet')
