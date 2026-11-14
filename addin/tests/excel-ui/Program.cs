@@ -85,7 +85,7 @@ internal static class NativeExcelUiChecks
                     grid.DrawToBitmap(image, new Rectangle(Point.Empty, image.Size));
                     var rect = grid.GetCellDisplayRectangle(1, 3, true);
                     var color = image.GetPixel(rect.Right - 5, rect.Top + 3);
-                    Check(color.R == 198 && color.G == 239 && color.B == 206, "Actual WinForms row color");
+                    Check(color.R == 198 && color.G == 239 && color.B == 206, "Actual WinForms row color: " + color);
                 }
 
                 grid.CurrentCell = grid[0, 2];

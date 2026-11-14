@@ -657,9 +657,12 @@ namespace SWToolsHub.Portable
                 var fill = condition.Element(ExcelBook.S + "fill")?.Element(ExcelBook.S + "patternFill");
                 if (fill != null)
                 {
-                    var color = fill.Element(ExcelBook.S + "fgColor") ?? fill.Element(ExcelBook.S + "bgColor");
-                    if (color != null)
-                        result.Fill = ColorTranslator.FromHtml(book.Color(color, "#FFFFFF"));
+                    var foreground = fill.Element(ExcelBook.S + "fgColor");
+                    var background = fill.Element(ExcelBook.S + "bgColor");
+                    // Differential fills may have an automatic foreground and an
+                    // explicit background (including files saved by ClosedXML).
+                    if (foreground != null || background != null)
+                        result.Fill = ColorTranslator.FromHtml(book.Color(foreground, book.Color(background, "#FFFFFF")));
                 }
 
                 var font = condition.Element(ExcelBook.S + "font");
