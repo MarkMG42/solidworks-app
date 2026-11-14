@@ -266,7 +266,8 @@ namespace SWToolsHub.Portable
                 new Rectangle(2,e.RowBounds.Top,grid.RowHeadersWidth-8,e.RowBounds.Height),Color.DimGray,
                 TextFormatFlags.Right | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding | TextFormatFlags.PreserveGraphicsClipping);
             grid.CellPainting += PaintCell;
-            grid.SelectionChanged += (s, e) => SelectCell();
+            // SelectionChanged can precede the update of CurrentCell.
+            grid.CurrentCellChanged += (s, e) => SelectCell();
             grid.Scroll += (s, e) => PositionChoice();
             grid.ColumnWidthChanged += (s, e) => PositionChoice();
             grid.SizeChanged += (s, e) => PositionChoice();

@@ -70,7 +70,7 @@ internal static class NativeExcelUiChecks
                 Check(!grid.Rows[10].Visible && !grid.Columns[6].Visible, "Hidden row/column");
                 grid.CurrentCell = grid[3, 3];
                 Pump(window);
-                Check(overlay.Visible && overlay.Items.Count >= 3, "Dropdown inside blank cell");
+                Check(overlay.Visible && overlay.Items.Count >= 3, "Dropdown inside blank cell: visible=" + overlay.Visible + "; items=" + overlay.Items.Count + "; bounds=" + overlay.Bounds + "; grid=" + grid.ClientSize);
                 for (int i = 0; i < overlay.Items.Count; i++)
                     if (overlay.Items[i].ToString() == "Проверено")
                     {
