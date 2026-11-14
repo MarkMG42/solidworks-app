@@ -629,7 +629,8 @@ namespace SWToolsHub.Portable
                 if (!File.Exists(path)) throw new FileNotFoundException("Файл больше не существует: " + path);
                 launchContext = "\nФайл: " + path + "\nТочка входа: " + chosen.FullName;
                 int error;
-                bool ok = sw.RunMacro2(path, macro.module, macro.procedure, 1, out error);
+                // Use the standard run mode: forced unload can close modeless VBA forms.
+                bool ok = sw.RunMacro2(path, macro.module, macro.procedure, 0, out error);
                 if (!ok) throw new InvalidOperationException("SolidWorks не запустил макрос. Код: " + error + " (0x" + error.ToString("X8") + ").\nФайл: " + path + "\nТочка входа: " + chosen.FullName + "\nПроверьте, что выбрана та же процедура, что при ручном запуске. В редакторе VBA проверьте Debug → Compile и Tools → References (MISSING). Автоматический повтор не выполнялся.");
                 settings.Entries[path] = chosen.FullName; SaveSettings();
                 status.Text = "Вызов макроса завершён. Проверьте результат на чертеже.";
