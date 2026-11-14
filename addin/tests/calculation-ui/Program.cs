@@ -67,6 +67,8 @@ internal static class UiChecks
                     picker.SelectedIndex = 0; Pump(window);
                     Check(ActiveGrid(view) == first, "Switching sheets retains original table");
                     if (book.Source.Contains("высоты")) {
+                        first.CellValidating += (sender, e) => Console.WriteLine("VALIDATE " + e.RowIndex + ":" + e.ColumnIndex + " value=" + e.FormattedValue);
+                        first.CellEndEdit += (sender, e) => Console.WriteLine("END EDIT " + e.RowIndex + ":" + e.ColumnIndex + " input=" + first[1, 2].Value + " result=" + first[1, 10].Value);
                         first.CurrentCell = first[1, 2]; Check(first.BeginEdit(true), "Height input starts editing");
                         ((TextBox)first.EditingControl).Text = "3000,5";
                         window.ClientSize = new Size(800, 600); Pump(window);
