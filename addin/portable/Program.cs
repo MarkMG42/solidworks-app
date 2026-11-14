@@ -181,7 +181,7 @@ namespace SWToolsHub.Portable
             // Keep macro UI intact; the new navigation occupies only the left edge.
             var navigation = new FlowLayoutPanel { Dock = DockStyle.Left, Width = 218, Padding = new Padding(18, 28, 18, 12), FlowDirection = FlowDirection.TopDown, WrapContents = false, AutoScroll = true, BackColor = Color.FromArgb(10,22,42) };
             Controls.Add(calculationHost); Controls.Add(navigation);
-            var macroButton = MakeButton("Макросы"); macroButton.Width = 182;
+            var macroButton = MakeButton("Макросы"); macroButton.Width = 182; macroButton.Height = 54;
             navigation.Controls.Add(new Label { Text = "◇  SW-Assistant", AutoSize = true, ForeColor = Color.White, Font = UiTheme.CreateSemiBoldFont(16), Margin = new Padding(0,0,0,24) });
             navigation.Controls.Add(macroButton);
             macroButton.Click += (s, e) => {
