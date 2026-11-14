@@ -181,7 +181,11 @@ namespace SWToolsHub.Portable
                     try { engine.SetInput(sheet.Name, cell.Address, view.Value); SaveInputs(); }
                     catch (CalculationError ex) { view.ErrorText = ex.Message; message.Text = ex.Message; message.ForeColor = Color.Firebrick; return; }
                 }
-                FillValues(sheet, grid);
+                // Refresh after DataGridView finishes its commit and layout events.
+                // Writing all cell values inside CellEndEdit can be overwritten by
+                // the still-running commit when resizing triggers automatic sizing.
+                if (grid.IsHandleCreated) grid.BeginInvoke((Action)(() => { if (!grid.IsDisposed) FillValues(sheet, grid); }));
+                else FillValues(sheet, grid);
             };
             grid.CurrentCellDirtyStateChanged += (s, e) => {
                 if (!painting && grid.IsCurrentCellDirty && grid.CurrentCell is DataGridViewComboBoxCell) {
