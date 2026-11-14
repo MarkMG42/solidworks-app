@@ -200,45 +200,34 @@ namespace SWToolsHub.Portable
                         view = new ExcelBookView(library, entry, loaded);
                         excelViews.Add(entry.Id, view); calculationHost.Controls.Add(view);
                         view.ExpandRequested += () => navigation.Visible = !navigation.Visible;
+                        view.DeleteRequested += () => {
+                            if (MessageBox.Show(this, "Удалить сохранённую копию «" + entry.Title + "»? Исходный XLSX останется.", "Удалить таблицу", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
+                            try {
+                                library.Delete(entry); calculationHost.Controls.Remove(view); excelViews.Remove(entry.Id); view.Dispose();
+                                calculationsActive = false; calculationHost.Visible = false; viewport.Visible = true; navigation.Visible = true; ReloadFolder(); RefreshLayout();
+                            } catch (Exception ex) { ShowError("Не удалось удалить книгу: " + ex.Message); }
+                        };
                     } else loaded?.Dispose();
                     foreach (Control child in calculationHost.Controls) child.Visible = child == view;
                     calculationsActive = true; viewport.Visible = false; calculationHost.Visible = true; view.BringToFront();
                 } catch (Exception ex) { loaded?.Dispose(); ShowError("Не удалось открыть книгу: " + ex.Message); }
             };
-            Action<ExcelEntry> addBookButton = entry => {
-                var row = new FlowLayoutPanel { Width = 155, Height = 58, WrapContents = false, Margin = new Padding(0) };
-                var bookButton = MakeButton(entry.Title); bookButton.Width = 150; bookButton.Height = 54;
-                var remove = MakeButton("×"); remove.Width = 28; remove.Height = 54; tips.SetToolTip(remove,"Удалить таблицу " + entry.Title);
-                Action delete = () => {
-                    if (MessageBox.Show(this, "Удалить «" + entry.Title + "» из приложения вместе с сохранённым вводом? Исходный файл на компьютере останется.", "Удалить таблицу", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
-                    try {
-                        ExcelBookView view; if (excelViews.TryGetValue(entry.Id, out view)) { calculationHost.Controls.Remove(view); excelViews.Remove(entry.Id); view.Dispose(); }
-                        library.Delete(entry); navigation.Controls.Remove(row); row.Dispose();
-                        calculationsActive = false; calculationHost.Visible = false; viewport.Visible = true; navigation.Visible = true; ReloadFolder(); RefreshLayout();
-                    } catch(Exception ex) { ShowError("Не удалось удалить книгу: " + ex.Message); }
-                };
-                bookButton.Click += (s,e) => { openBook(entry,null); ExcelBookView view; if(excelViews.TryGetValue(entry.Id,out view)) { view.DeleteRequested -= delete; view.DeleteRequested += delete; } };
-                remove.Click += (s,e) => delete(); row.Controls.Add(bookButton); row.Controls.Add(remove); navigation.Controls.Add(row);
-            };
-            foreach (var entry in library.Entries()) addBookButton(entry);
-            var addExcel = MakeButton("＋ Добавить расчёт"); addExcel.Width = 182; addExcel.Height = 54;
+            var addExcel = MakeButton("＋ Добавить файл"); addExcel.Width = 182; addExcel.Height = 54;
             addExcel.Click += (s,e) => {
                 if (busy || editingHotkeys) return;
-                using (var dialog = new OpenFileDialog { Filter = "Книги Excel (*.xlsx)|*.xlsx", Multiselect = true }) {
+                using (var dialog = new OpenFileDialog { Filter = "Книги Excel (*.xlsx)|*.xlsx", Multiselect = false }) {
                     if (dialog.ShowDialog(this) != DialogResult.OK) return;
-                    var errors = new List<string>(); ExcelEntry first = null; ExcelBook firstBook = null;
-                    foreach (string file in dialog.FileNames) {
-                        ExcelBook loaded = null;
-                        try {
-                            if (new FileInfo(file).Length > 15 * 1024 * 1024) throw new InvalidDataException("Максимальный размер XLSX — 15 МБ");
-                            byte[] bytes = File.ReadAllBytes(file); loaded = new ExcelBook(bytes); var entry = library.Add(Path.GetFileName(file),bytes); addBookButton(entry);
-                            if (first == null) { first = entry; firstBook = loaded; loaded = null; }
-                        } catch(Exception ex) { errors.Add(Path.GetFileName(file) + ": " + ex.Message); }
-                        finally { loaded?.Dispose(); }
-                    }
-                    navigation.Controls.SetChildIndex(addExcel,navigation.Controls.Count-1);
-                    if(first != null) { openBook(first,firstBook); var row = navigation.Controls.OfType<FlowLayoutPanel>().FirstOrDefault(r => r.Controls.OfType<Button>().Any(b => b.Text == first.Title)); row?.Controls.OfType<Button>().First().PerformClick(); }
-                    if(errors.Count>0)ShowError("Не все файлы добавлены:\n" + string.Join("\n",errors));
+                    ExcelBook loaded = null;
+                    try {
+                        string file = dialog.FileName;
+                        if (new FileInfo(file).Length > 15 * 1024 * 1024) throw new InvalidDataException("Максимальный размер XLSX — 15 МБ");
+                        byte[] bytes = File.ReadAllBytes(file);
+                        var entry = library.Entries().FirstOrDefault(e => e.FileName == Path.GetFileName(file) && new FileInfo(library.OriginalPath(e)).Length == bytes.Length && File.ReadAllBytes(library.OriginalPath(e)).SequenceEqual(bytes));
+                        loaded = new ExcelBook(bytes);
+                        if (entry == null) entry = library.Add(Path.GetFileName(file), bytes);
+                        openBook(entry, loaded); loaded = null;
+                    } catch (Exception ex) { ShowError("Не удалось добавить файл: " + ex.Message); }
+                    finally { loaded?.Dispose(); }
                 }
             };
             navigation.Controls.Add(addExcel);
@@ -605,6 +594,7 @@ namespace SWToolsHub.Portable
             if (selected == null) { ShowError("Выберите инструмент."); return; }
             busy = true; content.Enabled = false; moduleGrid.Enabled = false;
             SldWorks sw = null; ModelDoc2 document = null;
+            string launchContext = "";
             try
             {
                 // All automation is on this application's STA UI thread; COM marshals
@@ -616,7 +606,7 @@ namespace SWToolsHub.Portable
                 try { sw = (SldWorks)Marshal.GetActiveObject("SldWorks.Application"); }
                 catch (COMException) { throw new InvalidOperationException("Не удалось подключиться к SolidWorks. Откройте SolidWorks обычным способом, без запуска от администратора, затем повторите. При нескольких экземплярах оставьте один."); }
                 document = sw.IActiveDoc2;
-                if (document == null || (macro.requiredDocument == "drawing" && document.GetType() != 3)) throw new InvalidOperationException("Откройте подходящий чертёж в SolidWorks. Деталь и сборка не подходят.");
+                if (macro.requiredDocument == "drawing" && (document == null || document.GetType() != 3)) throw new InvalidOperationException("Откройте подходящий чертёж в SolidWorks. Деталь и сборка не подходят.");
                 string preferred = string.IsNullOrWhiteSpace(macro.module) ? null : macro.module + "." + macro.procedure;
                 string saved;
                 if (settings.Entries.TryGetValue(path, out saved)) preferred = saved;
@@ -624,7 +614,7 @@ namespace SWToolsHub.Portable
                 try { methods = MacroEntry.FromCom(sw.GetMacroMethods(path, 0)); }
                 catch (COMException) { methods = new MacroEntry[0]; }
                 var chosen = MacroEntry.AutoSelect(methods, preferred);
-                if (methods.Length > 1) {
+                if (methods.Length != 1) {
                     using (var dialog = new EntryDialog(macro.name, () => sw.GetMacroMethods(path, 0), preferred)) {
                         if (dialog.ShowDialog(this) != DialogResult.OK) return;
                         chosen = MacroEntry.Parse(dialog.Entry);
@@ -632,19 +622,19 @@ namespace SWToolsHub.Portable
                 }
                 if (chosen == null) throw new InvalidOperationException("SolidWorks не вернул точку входа макроса, а сохранённой или известной процедуры нет. Запуск невозможен без имени модуля и процедуры.");
                 macro.module = chosen.Module; macro.procedure = chosen.Procedure;
-                if (!settings.Entries.TryGetValue(path, out saved) || !string.Equals(saved, chosen.FullName, StringComparison.OrdinalIgnoreCase)) {
-                    settings.Entries[path] = chosen.FullName; SaveSettings();
-                }
                 status.Text = "Макрос выполняется…"; status.Refresh();
                 // The user may switch documents while choosing an entry point.
                 Release(document); document = sw.IActiveDoc2;
-                if (document == null || (macro.requiredDocument == "drawing" && document.GetType() != 3)) throw new InvalidOperationException("Активный документ изменился. Откройте подходящий документ и повторите запуск.");
+                if (macro.requiredDocument == "drawing" && (document == null || document.GetType() != 3)) throw new InvalidOperationException("Активный документ изменился. Откройте подходящий документ и повторите запуск.");
                 if (!File.Exists(path)) throw new FileNotFoundException("Файл больше не существует: " + path);
+                launchContext = "\nФайл: " + path + "\nТочка входа: " + chosen.FullName;
                 int error;
                 bool ok = sw.RunMacro2(path, macro.module, macro.procedure, 1, out error);
-                if (!ok) throw new InvalidOperationException("SolidWorks вернул ошибку " + error + ". Проверьте модуль, процедуру и условия VBA.");
+                if (!ok) throw new InvalidOperationException("SolidWorks не запустил макрос. Код: " + error + " (0x" + error.ToString("X8") + ").\nФайл: " + path + "\nТочка входа: " + chosen.FullName + "\nПроверьте, что выбрана та же процедура, что при ручном запуске. В редакторе VBA проверьте Debug → Compile и Tools → References (MISSING). Автоматический повтор не выполнялся.");
+                settings.Entries[path] = chosen.FullName; SaveSettings();
                 status.Text = "Вызов макроса завершён. Проверьте результат на чертеже.";
             }
+            catch (COMException ex) { ShowError("Ошибка COM 0x" + ex.ErrorCode.ToString("X8") + ": " + ex.Message + launchContext + "\nSolidWorks и SW-Assistant должны работать с одинаковыми правами; завершите диалог в SolidWorks и повторите."); }
             catch (Exception ex) { ShowError(ex.Message); }
             finally
             {

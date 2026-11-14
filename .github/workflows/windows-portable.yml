@@ -72,6 +72,24 @@ jobs:
           $process.Refresh()
           if ($process.HasExited) { throw "Packaged application exited before opening: $($process.ExitCode)" }
           if ($process.MainWindowHandle -eq 0) { Stop-Process -Id $process.Id -Force; throw 'Packaged application did not open a native window' }
+          Add-Type -TypeDefinition @'
+          using System;
+          using System.Runtime.InteropServices;
+          public class NativeCapture {
+            [StructLayout(LayoutKind.Sequential)] public struct Rect { public int Left, Top, Right, Bottom; }
+            [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr hwnd, out Rect rect);
+            [DllImport("user32.dll")] public static extern bool PrintWindow(IntPtr hwnd, IntPtr hdc, uint flags);
+          }
+          '@
+          $rect = New-Object NativeCapture+Rect
+          [NativeCapture]::GetWindowRect($process.MainWindowHandle, [ref]$rect) | Out-Null
+          $bitmap = New-Object System.Drawing.Bitmap(($rect.Right-$rect.Left),($rect.Bottom-$rect.Top))
+          $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
+          $hdc = $graphics.GetHdc()
+          try { [NativeCapture]::PrintWindow($process.MainWindowHandle,$hdc,2) | Out-Null } finally { $graphics.ReleaseHdc($hdc) }
+          New-Item -ItemType Directory -Force -Path artifacts/native-shell | Out-Null
+          $bitmap.Save((Join-Path $env:GITHUB_WORKSPACE 'artifacts/native-shell/application.png'))
+          $graphics.Dispose(); $bitmap.Dispose()
           $process.CloseMainWindow() | Out-Null
           if (!$process.WaitForExit(5000)) { Stop-Process -Id $process.Id -Force }
           $text = "Source: $env:GITHUB_SHA`nWindows runner: Windows Server 2022 x64`nNumerical, library and native WinForms checks: PASS`nZIP CRC, packaged EXE/DLL equality and SHA-256: PASS`nSolidWorks/VBA: not executed`n"
